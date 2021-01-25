@@ -1,0 +1,14 @@
+.cls-login-footer {
+  margin-top: 20px;
+
+}
+
+.cls-icons-into-textbox {
+  color: 	#b6b6b6;
+}
+
+form .mat-form-field,
+form .mat-form-field input {
+  width: 100% !important;
+  font-size: 20px;
+}

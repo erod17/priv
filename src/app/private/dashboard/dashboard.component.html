@@ -1,0 +1,293 @@
+<mat-toolbar style="background-color: transparent; color: #919E9E;">
+
+  <div class="container">
+
+    <div class="row">
+
+      <div class="col-2">
+
+        <img src="../../../assets/images/icons/logo.svg" alt="">
+
+      </div>
+
+      <div class="col-8"></div>
+
+      <div class="col-2">
+        <a mat-button (click)="signout()" style="text-decoration: none;">Sign Out</a>
+      </div>
+
+    </div>
+  </div>
+
+</mat-toolbar>
+
+
+<div class="container">
+
+  <div class="row" style="margin-top: 20px;" [hidden]="!globals.incomingCall">
+
+    <div class="col-6">
+      <div class="alert alert-success" role="alert" style="width: 100%;">
+
+
+        <h2 class="alert-heading">
+          <span style="margin-bottom: -15px;">You are being invited to join to Meeting...</span>
+          <mat-icon style="font-size: 50px; margin-right: 25px; color: #D35400;">voice_chat</mat-icon>
+        </h2>
+
+
+        <hr>
+        <p class="mb-0">
+          <button mat-button (click)="answerCall();" color="success" style="border: none; outline: none;">Accept</button>
+          <button mat-button>Reject</button>
+        </p>
+
+
+
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+
+    <div class="col-3">
+      <mat-card class="example-card">
+        <mat-card-header>
+          <div mat-card-avatar><mat-icon style="cursor: pointer; color: teal;">video_settings</mat-icon></div>
+          <mat-card-title>New Meeting</mat-card-title>
+          <mat-card-subtitle>
+
+            <strong style="color: #3657DC;">
+              <span>{{ userInfo['extension'].number_alias.substr(0,3) + ' - '}}</span>
+              <span>{{ userInfo['extension'].number_alias.substr(4,3) + ' - '}}</span>
+              <span>{{ userInfo['extension'].number_alias.substr(6,4) }}</span>
+            </strong>
+
+          </mat-card-subtitle>
+        </mat-card-header>
+
+          <a (click)="newMeeting(userInfo['extension'].number_alias)"><mat-icon class="cls-icon-service" style="color: #D35400;">videocam</mat-icon></a>
+
+
+        <mat-card-content>
+          <p></p>
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button mat-button (click)="go(0)">Settings</button>
+          <!-- <button mat-button>Start</button> -->
+        </mat-card-actions>
+      </mat-card>
+
+    </div>
+
+
+
+    <div class="col-3">
+
+      <mat-card class="example-card">
+        <mat-card-header>
+          <div mat-card-avatar><mat-icon style="cursor: pointer; color: teal;">video_settings</mat-icon></div>
+          <mat-card-title>Join</mat-card-title>
+          <mat-card-subtitle>{{ userInfo['contact_name_given'] + ' ' + userInfo['contact_name_family']}}</mat-card-subtitle>
+        </mat-card-header>
+
+          <a (click)="go(1)"><mat-icon class="cls-icon-service"style="color: #5D6D7E;">add_to_queue</mat-icon></a>
+
+
+        <mat-card-content>
+          <p></p>
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button mat-button (click)="go(1)">Settings</button>
+          <!-- <button mat-button>Start</button> -->
+        </mat-card-actions>
+      </mat-card>
+
+    </div>
+
+
+
+    <div class="col-3">
+
+      <mat-card class="example-card">
+        <mat-card-header>
+          <div mat-card-avatar><mat-icon style="cursor: pointer; color: teal;">settings</mat-icon></div>
+          <mat-card-title>Schedule</mat-card-title>
+          <mat-card-subtitle>Topic</mat-card-subtitle>
+        </mat-card-header>
+
+          <a (click)="go(2)"><mat-icon class="cls-icon-service"style="color: #229954;">book_online</mat-icon></a>
+
+
+        <mat-card-content>
+          <p></p>
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button mat-button (click)="go(2)">Settings</button>
+          <!-- <button mat-button>Start</button> -->
+        </mat-card-actions>
+      </mat-card>
+
+    </div>
+
+
+
+    <div class="col-3">
+
+      <mat-card class="example-card">
+        <mat-card-header>
+          <div mat-card-avatar><mat-icon style="cursor: pointer; color: teal;">settings</mat-icon></div>
+          <mat-card-title>Screen Share</mat-card-title>
+          <mat-card-subtitle>Whiteboard</mat-card-subtitle>
+        </mat-card-header>
+
+          <a (click)="go(3)"><mat-icon class="cls-icon-service"style="color: #F9E79F;">screen_share</mat-icon></a>
+
+
+        <mat-card-content>
+          <p></p>
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button mat-button (click)="go(3)">Settings</button>
+          <!-- <button mat-button>Start</button> -->
+        </mat-card-actions>
+      </mat-card>
+
+
+    </div>
+
+
+  </div>
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="container">
+
+
+
+
+
+
+  <mat-tab-group mat-stretch-tabs [selectedIndex]="selected" style="height: auto; overflow: hidden; overflow-y: hidden;">
+
+    <mat-tab label="">
+
+      <div class="" style="padding: 20px !important;">
+
+        <div style="margin-bottom: 20px;">
+          <mat-slide-toggle [(ngModel)]="videoNewMeeting" (change)="setVideoNewMeeting($event);" style="margin-right: 25px;" color="primary">Video</mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="audioNewMeeting" (change)="setAudioNewMeeting($event);" color="primary">Audio</mat-slide-toggle>
+        </div>
+
+
+
+        <div class="" style="padding: 20px;">
+
+
+          <label for="">Meeting ID:</label> <br>
+          <strong style="color: #3657DC; font-size: 30px; margin: 15px 0px 15px 0px;">
+            <span>{{ userInfo['extension'].number_alias.substr(0,3) + ' - '}}</span>
+            <span>{{ userInfo['extension'].number_alias.substr(4,3) + ' - '}}</span>
+            <span>{{ userInfo['extension'].number_alias.substr(6,4) }}</span>
+          </strong>
+
+        </div>
+
+        <div class="">
+
+          <form [formGroup]="meetForm" (ngSubmit)="saveConfRoom()" style="padding: 20px;">
+
+            <mat-form-field class="" style="font-size: 20px; width: 50%;">
+              <mat-label>Meeting Name</mat-label>
+              <input matInput
+                placeholder=""
+                formControlName="meetName"
+              >
+            </mat-form-field>
+            <br>
+            <mat-form-field class="" style="font-size: 20px; width: 50%;">
+              <mat-label>Pin Number</mat-label>
+              <input matInput placeholder="" formControlName="pinNumb" type="number">
+            </mat-form-field>
+            <br>
+            <mat-slide-toggle color="primary" style="margin: 15px 0px 25px 0px;">Wait-Moderator</mat-slide-toggle>
+
+            <br>
+            <button mat-flat-button type="submit" [disabled]="!meetForm.valid" style="width: 50%;">Save</button>
+
+          </form>
+
+        </div>
+
+      </div>
+
+
+
+    </mat-tab>
+
+
+
+
+
+
+    <mat-tab label="">
+
+      <div class="" style="padding: 20px !important;">
+
+        <div style="margin-bottom: 20px;">
+          <mat-slide-toggle [(ngModel)]="videoNewMeeting" (change)="setVideoNewMeeting($event);" style="margin-right: 25px;" color="primary">Video</mat-slide-toggle>
+          <mat-slide-toggle [(ngModel)]="audioNewMeeting" (change)="setAudioNewMeeting($event);" color="primary">Audio</mat-slide-toggle>
+        </div>
+
+
+        <div class="">
+          <form [formGroup]="joinForm" (ngSubmit)="joinRoom()" style="padding: 20px;">
+
+            <mat-form-field class="example-full-width" style="font-size: 25px; width: 35%;">
+              <mat-label>Meeting Room Code</mat-label>
+
+              <input type="tel"
+                    matInput
+                    placeholder="555-555-1234"
+                    style="text-align: center;"
+                    maxlength="10"
+                    formControlName="roomNumber"
+              >
+
+            </mat-form-field>
+            <br>
+
+            <button type="submit" mat-flat-button [disabled]="!joinForm.valid" style="width: 35%;">Join</button>
+
+          </form>
+        </div>
+      </div>
+
+    </mat-tab>
+
+
+
+    <mat-tab label=""> Content 3 </mat-tab>
+    <mat-tab label=""> Content 4 </mat-tab>
+  </mat-tab-group>
+
+
+
+</div>

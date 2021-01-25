@@ -1,0 +1,126 @@
+<div class="" style="left: 50%; top: 45%; transform: translate(-50%, -50%); position: absolute;">
+  <div class="row justify-content-center align-items-center" style="margin-top: 25px !important;">
+      <div style="width: 450px !important; border: 1px solid rgb(192, 183, 183); padding: 25px;">
+
+        <div class="text-center">
+          <!-- <img src="../../../assets/images/icons/logo.svg" alt=""> -->
+        </div>
+
+        <div class="text-center mb-4" style="margin-top: 20px;">
+            <p class="h5 mb-5 font-weight-normal" style="color:lightslategrey;">
+                New account
+            </p>
+        </div>
+
+        <div>
+            <ngb-alert class="alert-login-user" *ngIf="showSuccess" (close)="signupAlertClosed = true">
+                <strong>Success,</strong> {{signupMsg}}
+                <br>
+                <button mat-button color="primary" style="width: 100%; font-size: 20px; margin-top: 25px;"(click)="gotoSignin()">Acept</button>
+            </ngb-alert>
+        </div>
+
+          <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" *ngIf="!showSuccess">
+
+              <div>
+                  <ngb-alert class="alert-login-user" *ngIf="showError" (close)="signupAlertClosed = true">
+                      <strong>Error,</strong> {{signupMsg}}
+                  </ngb-alert>
+              </div>
+
+
+              <mat-form-field class="">
+                  <input matInput
+                      type="text"
+                      name="firstName"
+                      placeholder="First Name"
+                      autofocus
+                      formControlName="firstName"
+                      >
+                  <mat-hint></mat-hint>
+                  <mat-error></mat-error>
+                  <mat-error></mat-error>
+
+
+              </mat-form-field>
+
+
+              <br>
+
+
+              <mat-form-field class="">
+                  <input matInput
+                      type="text"
+                      name="lastName"
+                      placeholder="Last Name"
+                      formControlName="lastName"
+                      >
+                  <mat-hint></mat-hint>
+                  <mat-error></mat-error>
+                  <mat-error></mat-error>
+
+
+              </mat-form-field>
+
+              <br>
+
+
+              <mat-form-field class="">
+                  <input matInput
+                      type="email"
+                      name="email"
+                      placeholder="Email Address"
+                      formControlName="email"
+                      >
+                  <mat-hint></mat-hint>
+                  <mat-error></mat-error>
+                  <mat-error></mat-error>
+
+
+              </mat-form-field>
+
+              <br>
+
+
+              <mat-form-field class="">
+                  <input matInput
+                      type="password"
+                      name="password"
+                      placeholder="Password"
+                      formControlName="password"
+                      >
+                  <mat-hint></mat-hint>
+                  <mat-error></mat-error>
+                  <mat-error></mat-error>
+
+
+              </mat-form-field>
+
+
+              <br>
+
+              <mat-form-field class="">
+                  <input matInput
+                      type="password"
+                      name="confirmPassword"
+                      placeholder="Confirm Password"
+                      formControlName="confirmPassword"
+                      >
+                  <mat-hint></mat-hint>
+                  <mat-error></mat-error>
+                  <mat-error></mat-error>
+                  <!-- mat-icon matSuffix class="cls-icons-into-textbox">email</mat-icon -->
+
+              </mat-form-field>
+
+
+
+              <br>
+              <!-- button class="btn btn-lg btn-outline-primary btn-block" type="submit" [disabled]="!signupForm.valid">Signup</button -->
+              <button mat-button color="primary" type="submit" [disabled]="!signupForm.valid" style="width: 100%; font-size: 20px;">Signup</button>
+
+
+          </form>
+      </div>
+  </div>
+</div>

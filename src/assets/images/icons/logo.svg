@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="178.705" height="48.407" viewBox="0 0 178.705 48.407">
+  <g id="Group_221" data-name="Group 221" transform="translate(-114.295 -82)">
+    <g id="Design_copy" data-name="Design copy" transform="translate(-65.905 -112.107)">
+      <g id="XMLID_3_" transform="translate(180.2 210.153)">
+        <path id="XMLID_4_" d="M200,210.6v6.167H187.555v7.015h9.618v5.884h-9.618v12.956H180.2V210.6H200Z" transform="translate(-180.2 -210.543)" fill="#081938"/>
+        <path id="XMLID_6_" d="M312.257,226.171l12.277,16.35h-8.882l-10.3-14.37v14.37H298V210.5h7.355v14.087l10.41-14.087h8.826Z" transform="translate(-231.354 -210.5)" fill="#081938"/>
+        <path id="XMLID_8_" d="M357.3,210.6v18.444a7.663,7.663,0,0,0,1.358,4.866,5.469,5.469,0,0,0,7.921,0,7.555,7.555,0,0,0,1.358-4.866V210.6h7.355v18.444a15.872,15.872,0,0,1-1.7,7.638,10.989,10.989,0,0,1-4.583,4.639,13.892,13.892,0,0,1-6.563,1.584,13.253,13.253,0,0,1-6.45-1.528,10.945,10.945,0,0,1-4.413-4.639A16.57,16.57,0,0,1,350,229.1V210.657h7.3Z" transform="translate(-253.935 -210.543)" fill="#081938"/>
+        <path id="XMLID_13_" d="M410.4,236.3h13.408v6.223H402.2v-5.884l13.182-19.915H402.37V210.5H423.7v5.94Z" transform="translate(-276.602 -210.5)" fill="#081938"/>
+      </g>
+      <g id="XMLID_2_" transform="translate(205.716 209.7)">
+        <circle id="XMLID_9_" cx="16.35" cy="16.35" r="16.35" fill="#e9293f"/>
+        <path id="XMLID_11_" d="M249.8,229.2H239.445a1.256,1.256,0,0,0-1.245,1.245v8.2a1.256,1.256,0,0,0,1.245,1.245H249.8a1.256,1.256,0,0,0,1.245-1.245v-8.2A1.256,1.256,0,0,0,249.8,229.2Z" transform="translate(-230.902 -218.168)" fill="#fff"/>
+        <path id="XMLID_10_" d="M262.3,237.214l4.3,2.32V231.5l-4.3,2.32Z" transform="translate(-241.367 -219.167)" fill="#fff"/>
+      </g>
+    </g>
+    <text id="BETA" transform="translate(262 95)" fill="#e9293f" font-size="12" font-family="Poppins-Bold, Poppins" font-weight="700"><tspan x="0" y="0">BETA</tspan></text>
+  </g>
+</svg>
