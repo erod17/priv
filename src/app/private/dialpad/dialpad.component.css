@@ -1,0 +1,225 @@
+.table {
+  padding: 0;
+  margin: 0;
+}
+.dialpad-box {
+    width: 300px;
+    height: 500px;
+    padding: 60px 10px 10px 10px;
+    box-sizing: border-box;
+    border: solid 1px #ccc;
+    color: rgba(0, 0, 0, 0.87);
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+
+    background: #fff;
+    border-radius: 4px;
+    position: relative;
+    z-index: 1;
+    transition: box-shadow 200ms cubic-bezier(0, 0, 0.2, 1);
+    box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2),
+                0 2px 2px 0 rgba(0, 0, 0, 0.14),
+                0 1px 5px 0 rgba(0, 0, 0, 0.12);
+  }
+
+  .dialpad-box:active {
+    box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2),
+                0 8px 10px 1px rgba(0, 0, 0, 0.14),
+                0 3px 14px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .dialpad-handle {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #ccc;
+    cursor: move;
+    width: 24px;
+    height: 24px;
+  }
+
+
+
+/********** D I A L P A D  **********/
+.cls-cont-phone-number {
+    width: 100%;
+}
+
+.cls-phone-number {
+  font-weight: bold;
+  text-align: center;
+  font-size: 25px;
+  width: 100% !important;
+}
+
+.cls-btn-bck-space {
+  font-size: 20px;
+  color: black;
+  cursor: pointer;
+}
+
+.span4
+{
+    width: 80px;
+    float: left;
+    margin: 0 8px 10px 8px;
+}
+
+.phone
+{
+    height: 100%;
+    padding-bottom: 5px !important;
+    margin-top: 0px;
+    background: #fff;
+    overflow: hidden;
+}
+.tel
+{
+    margin-bottom: 10px;
+    margin-top: 10px;
+    border: 1px solid #9e9e9e;
+    border-radius: 0px;
+}
+.num-pad
+{
+    margin: auto 20px;
+    padding-left: 15px;
+}
+
+
+.num
+{
+    border: 1px solid #9e9e9e;
+    -webkit-border-radius: 999px;
+    border-radius: 999px;
+    -moz-border-radius: 999px;
+    height: 80px;
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+}
+.num:hover
+{
+    background-color: #9e9e9e;
+    color: #fff;
+    transition-property: background-color .2s linear 0s;
+    -moz-transition: background-color .2s linear 0s;
+    -webkit-transition: background-color .2s linear 0s;
+    -o-transition: background-color .2s linear 0s;
+}
+.txt
+{
+    font-size: 30px;
+    text-align: center;
+    margin-top: 15px;
+    font-family: 'Lato' , sans-serif;
+    line-height: 30px;
+    color: #333;
+}
+.small
+{
+    font-size: 15px;
+}
+
+.phone .btn
+{
+    font-weight: bold;
+    -webkit-transition: .1s ease-in background-color;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: 1px;
+}
+.phone .btn:hover
+{
+    transition-property: background-color .2s linear 0s;
+    -moz-transition: background-color .2s linear 0s;
+    -webkit-transition: background-color .2s linear 0s;
+    -o-transition: background-color .2s linear 0s;
+}
+.phone .spanicons
+{
+    width: 72px;
+    float: left;
+    text-align: center;
+    margin-top: 40px;
+    color: #9e9e9e;
+    font-size: 30px;
+    cursor: pointer;
+}
+.phone .spanicons:hover
+{
+    color: #3498db;
+    transition-property: color .2s linear 0s;
+    -moz-transition: color .2s linear 0s;
+    -webkit-transition: color .2s linear 0s;
+    -o-transition: color .2s linear 0s;
+}
+.phone .active
+{
+    color: #3498db;
+}
+.cls-dial-pad-modal .modal-dialog {
+    width: 370px;
+    border: #0073a5 solid 3px;
+    border-radius: 10px;
+
+}
+
+.cls-letters {
+  font-size: 9px !important;
+}
+
+
+/********** DIAL PAD DTMF  **********/
+
+.cls-btn-dial-pad {
+    width: 60px;
+    height: 60px;
+    border: 1px solid #9e9e9e;
+    -webkit-border-radius: 999px;
+    border-radius: 999px;
+    -moz-border-radius: 999px;
+    background-color: #fff;
+    color: #333;
+    cursor: pointer;
+    font-family: 'Lato' , sans-serif;
+}
+.cls-btn-dial-pad:hover
+{
+    background-color: #9e9e9e;
+    color: #fff;
+    transition-property: background-color .2s linear 0s;
+    -moz-transition: background-color .2s linear 0s;
+    -webkit-transition: background-color .2s linear 0s;
+    -o-transition: background-color .2s linear 0s;
+}
+.cls-btn-dial-pad span {
+    position: relative;
+    display: block;
+    font-size: 17px;
+/*    margin-top: -20px*/
+}
+.cls-btn-dial-pad p {
+    position: relative;
+    display: block;
+    font-size: 8px;
+/*    margin-top: -20px*/
+}
+
+.cls-cmd-btns {
+    width: 100%;
+    height: auto;
+    margin-top: 30px;
+    /* border: solid red 1px; */
+    text-align: center;
+}
+
+.cls-cmd-btns button {
+    width: 50px;
+    height: 50px;
+    background-color: #e6e6e6;
+    margin-right: 15px;
+
+}

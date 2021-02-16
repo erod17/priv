@@ -1,293 +1,99 @@
-<mat-toolbar style="background-color: transparent; color: #919E9E;">
+<div [hidden]="sipJs.videoActive()" style="left: 50%; top: 45%; transform: translate(-50%, -50%); position: absolute;">
+  <div class="row justify-content-center align-items-center" style="margin-top: 25px !important;">
+      <div style="width: 420px !important; border: 1px solid rgb(192, 183, 183); padding: 25px;">
 
-  <div class="container">
+        <div class="text-center" >
+            <p class="h6 mb-3 font-weight-normal" style="color:lightslategrey;">
+                User Extension: <strong>{{ uaInfo.ext }}</strong>
+            </p>
+        </div>
 
-    <div class="row">
+        <div class="alert" role="alert" *ngIf="globals.outgoingCall || globals.incomingCall" style="width: 100%;">
 
-      <div class="col-2">
+          <div class="h5 alert-heading">
+            <span>{{ directionCall() + '  ' + fromTo() }}</span>
+          </div>
 
-        <img src="../../../assets/images/icons/logo.svg" alt="">
+
+          <p class="mb-0" *ngIf="globals.incomingCall">
+            <button mat-raised-button (click)="answerCall();" color="basic" style="background-color: chartreuse;">Accept</button>
+            <button mat-stroked-button (click)="rejectCall();" color="warn" class="ml-2">Decline</button>
+          </p>
+
+          <p *ngIf="globals.onCall">
+            On a call with...
+          </p>
+
+        </div>
+
+
+        <div class="alert alert-secondary" role="alert" *ngIf="globals.onCall" style="width: 100%;">
+
+          <div class="h5 alert-heading">
+            <span>On a call with...</span>
+          </div>
+
+          <p>
+            <strong class="h4">{{ fromTo() }}</strong>
+          </p>
+
+        </div>
+
+
+
+        <form [formGroup]="callerForm">
+          <mat-form-field class="cls-phone-number" appearance="none" *ngIf="!globals.outgoingCall && !globals.incomingCall && !globals.onCall">
+            <input matInput appearance="fill"
+                  class="cls-phone-number"
+                  name="phoneNumber"
+                  minlength="4"
+                  maxlength=11
+                  (keypress)="keyPress($event)"
+                  (change)="changeCallNumber($event)"
+                  pattern="[0-9]*"
+                  inputmode="numeric"
+                  formControlName="phoneNumber"
+                  [value]="globals.outgoingNumber"
+            >
+
+              <mat-icon matSuffix class="cls-btn-bck-space" (click)="backSpacePhoneNumber()" *ngIf="globals.outgoingNumber">backspace</mat-icon>
+
+          </mat-form-field>
+        </form>
+
+        <app-dialpad></app-dialpad>
+
+        <div class="cls-cmd-btns">
+          <app-funct-buttons></app-funct-buttons>
+        </div>
+
 
       </div>
-
-      <div class="col-8"></div>
-
-      <div class="col-2">
-        <a mat-button (click)="signout()" style="text-decoration: none;">Sign Out</a>
-      </div>
-
-    </div>
   </div>
-
-</mat-toolbar>
-
-
-<div class="container">
-
-  <div class="row" style="margin-top: 20px;" [hidden]="!globals.incomingCall">
-
-    <div class="col-6">
-      <div class="alert alert-success" role="alert" style="width: 100%;">
-
-
-        <h2 class="alert-heading">
-          <span style="margin-bottom: -15px;">You are being invited to join to Meeting...</span>
-          <mat-icon style="font-size: 50px; margin-right: 25px; color: #D35400;">voice_chat</mat-icon>
-        </h2>
-
-
-        <hr>
-        <p class="mb-0">
-          <button mat-button (click)="answerCall();" color="success" style="border: none; outline: none;">Accept</button>
-          <button mat-button>Reject</button>
-        </p>
-
-
-
-      </div>
-    </div>
-  </div>
-
-  <div class="row">
-
-    <div class="col-3">
-      <mat-card class="example-card">
-        <mat-card-header>
-          <div mat-card-avatar><mat-icon style="cursor: pointer; color: teal;">video_settings</mat-icon></div>
-          <mat-card-title>New Meeting</mat-card-title>
-          <mat-card-subtitle>
-
-            <strong style="color: #3657DC;">
-              <span>{{ userInfo['extension'].number_alias.substr(0,3) + ' - '}}</span>
-              <span>{{ userInfo['extension'].number_alias.substr(4,3) + ' - '}}</span>
-              <span>{{ userInfo['extension'].number_alias.substr(6,4) }}</span>
-            </strong>
-
-          </mat-card-subtitle>
-        </mat-card-header>
-
-          <a (click)="newMeeting(userInfo['extension'].number_alias)"><mat-icon class="cls-icon-service" style="color: #D35400;">videocam</mat-icon></a>
-
-
-        <mat-card-content>
-          <p></p>
-        </mat-card-content>
-
-        <mat-card-actions>
-          <button mat-button (click)="go(0)">Settings</button>
-          <!-- <button mat-button>Start</button> -->
-        </mat-card-actions>
-      </mat-card>
-
-    </div>
-
-
-
-    <div class="col-3">
-
-      <mat-card class="example-card">
-        <mat-card-header>
-          <div mat-card-avatar><mat-icon style="cursor: pointer; color: teal;">video_settings</mat-icon></div>
-          <mat-card-title>Join</mat-card-title>
-          <mat-card-subtitle>{{ userInfo['contact_name_given'] + ' ' + userInfo['contact_name_family']}}</mat-card-subtitle>
-        </mat-card-header>
-
-          <a (click)="go(1)"><mat-icon class="cls-icon-service"style="color: #5D6D7E;">add_to_queue</mat-icon></a>
-
-
-        <mat-card-content>
-          <p></p>
-        </mat-card-content>
-
-        <mat-card-actions>
-          <button mat-button (click)="go(1)">Settings</button>
-          <!-- <button mat-button>Start</button> -->
-        </mat-card-actions>
-      </mat-card>
-
-    </div>
-
-
-
-    <div class="col-3">
-
-      <mat-card class="example-card">
-        <mat-card-header>
-          <div mat-card-avatar><mat-icon style="cursor: pointer; color: teal;">settings</mat-icon></div>
-          <mat-card-title>Schedule</mat-card-title>
-          <mat-card-subtitle>Topic</mat-card-subtitle>
-        </mat-card-header>
-
-          <a (click)="go(2)"><mat-icon class="cls-icon-service"style="color: #229954;">book_online</mat-icon></a>
-
-
-        <mat-card-content>
-          <p></p>
-        </mat-card-content>
-
-        <mat-card-actions>
-          <button mat-button (click)="go(2)">Settings</button>
-          <!-- <button mat-button>Start</button> -->
-        </mat-card-actions>
-      </mat-card>
-
-    </div>
-
-
-
-    <div class="col-3">
-
-      <mat-card class="example-card">
-        <mat-card-header>
-          <div mat-card-avatar><mat-icon style="cursor: pointer; color: teal;">settings</mat-icon></div>
-          <mat-card-title>Screen Share</mat-card-title>
-          <mat-card-subtitle>Whiteboard</mat-card-subtitle>
-        </mat-card-header>
-
-          <a (click)="go(3)"><mat-icon class="cls-icon-service"style="color: #F9E79F;">screen_share</mat-icon></a>
-
-
-        <mat-card-content>
-          <p></p>
-        </mat-card-content>
-
-        <mat-card-actions>
-          <button mat-button (click)="go(3)">Settings</button>
-          <!-- <button mat-button>Start</button> -->
-        </mat-card-actions>
-      </mat-card>
-
-
-    </div>
-
-
-  </div>
-
-
-
-
-
-
-
 </div>
 
 
 
+<div [hidden]="!sipJs.videoActive()" style="left: 50%; top: 45%; transform: translate(-50%, -50%); position: absolute;">
+  <div class="row justify-content-center align-items-center" >
+    <div style="width: 800px !important; height: 580px; border: 1px solid rgb(192, 183, 183); padding: 10px; background-color: black;">
 
-
-
-
-
-<div class="container">
-
-
-
-
-
-
-  <mat-tab-group mat-stretch-tabs [selectedIndex]="selected" style="height: auto; overflow: hidden; overflow-y: hidden;">
-
-    <mat-tab label="">
-
-      <div class="" style="padding: 20px !important;">
-
-        <div style="margin-bottom: 20px;">
-          <mat-slide-toggle [(ngModel)]="videoNewMeeting" (change)="setVideoNewMeeting($event);" style="margin-right: 25px;" color="primary">Video</mat-slide-toggle>
-          <mat-slide-toggle [(ngModel)]="audioNewMeeting" (change)="setAudioNewMeeting($event);" color="primary">Audio</mat-slide-toggle>
-        </div>
-
-
-
-        <div class="" style="padding: 20px;">
-
-
-          <label for="">Meeting ID:</label> <br>
-          <strong style="color: #3657DC; font-size: 30px; margin: 15px 0px 15px 0px;">
-            <span>{{ userInfo['extension'].number_alias.substr(0,3) + ' - '}}</span>
-            <span>{{ userInfo['extension'].number_alias.substr(4,3) + ' - '}}</span>
-            <span>{{ userInfo['extension'].number_alias.substr(6,4) }}</span>
-          </strong>
-
-        </div>
-
-        <div class="">
-
-          <form [formGroup]="meetForm" (ngSubmit)="saveConfRoom()" style="padding: 20px;">
-
-            <mat-form-field class="" style="font-size: 20px; width: 50%;">
-              <mat-label>Meeting Name</mat-label>
-              <input matInput
-                placeholder=""
-                formControlName="meetName"
-              >
-            </mat-form-field>
-            <br>
-            <mat-form-field class="" style="font-size: 20px; width: 50%;">
-              <mat-label>Pin Number</mat-label>
-              <input matInput placeholder="" formControlName="pinNumb" type="number">
-            </mat-form-field>
-            <br>
-            <mat-slide-toggle color="primary" style="margin: 15px 0px 25px 0px;">Wait-Moderator</mat-slide-toggle>
-
-            <br>
-            <button mat-flat-button type="submit" [disabled]="!meetForm.valid" style="width: 50%;">Save</button>
-
-          </form>
-
-        </div>
-
+      <div class="cls-remote-video-box">
+        <video id="remoteVideo" autoplay loop playsinline class="cls-remote-video"></video>
       </div>
 
-
-
-    </mat-tab>
-
-
-
-
-
-
-    <mat-tab label="">
-
-      <div class="" style="padding: 20px !important;">
-
-        <div style="margin-bottom: 20px;">
-          <mat-slide-toggle [(ngModel)]="videoNewMeeting" (change)="setVideoNewMeeting($event);" style="margin-right: 25px;" color="primary">Video</mat-slide-toggle>
-          <mat-slide-toggle [(ngModel)]="audioNewMeeting" (change)="setAudioNewMeeting($event);" color="primary">Audio</mat-slide-toggle>
-        </div>
-
-
-        <div class="">
-          <form [formGroup]="joinForm" (ngSubmit)="joinRoom()" style="padding: 20px;">
-
-            <mat-form-field class="example-full-width" style="font-size: 25px; width: 35%;">
-              <mat-label>Meeting Room Code</mat-label>
-
-              <input type="tel"
-                    matInput
-                    placeholder="555-555-1234"
-                    style="text-align: center;"
-                    maxlength="10"
-                    formControlName="roomNumber"
-              >
-
-            </mat-form-field>
-            <br>
-
-            <button type="submit" mat-flat-button [disabled]="!joinForm.valid" style="width: 35%;">Join</button>
-
-          </form>
-        </div>
+      <div class="cls-local-video-box">
+        <video id="localVideo" autoplay loop playsinline muted class="cls-local-video"></video>
       </div>
 
-    </mat-tab>
+    </div>
 
+    <div class="cls-cmd-btns">
+      <app-funct-buttons></app-funct-buttons>
+    </div>
 
-
-    <mat-tab label=""> Content 3 </mat-tab>
-    <mat-tab label=""> Content 4 </mat-tab>
-  </mat-tab-group>
-
-
-
+  </div>
 </div>
+
+
+

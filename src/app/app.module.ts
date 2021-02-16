@@ -12,10 +12,11 @@ import { Globals } from './globals';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { WelcomeComponent } from './public/welcome/welcome.component';
-import { SignupComponent } from './public/signup/signup.component';
-import { SigninComponent } from './public/signin/signin.component';
 import { DashboardComponent } from './private/dashboard/dashboard.component';
 import { RoomComponent } from './private/room/room.component';
+import { RegistrationComponent } from './public/registration/registration.component';
+import { DialpadComponent } from './private/dialpad/dialpad.component';
+import { FunctButtonsComponent } from './private/funct-buttons/funct-buttons.component';
 
 export function tokenGetter(): any {
   return window.localStorage.getItem('token');
@@ -25,10 +26,11 @@ export function tokenGetter(): any {
   declarations: [
     AppComponent,
     WelcomeComponent,
-    SignupComponent,
-    SigninComponent,
     DashboardComponent,
-    RoomComponent
+    RoomComponent,
+    RegistrationComponent,
+    DialpadComponent,
+    FunctButtonsComponent
   ],
   imports: [
     BrowserModule,
@@ -39,7 +41,7 @@ export function tokenGetter(): any {
     forms.FormsModule, forms.ReactiveFormsModule,
     JwtModule.forRoot({
       config: {
-        tokenGetter: tokenGetter,
+        tokenGetter: tokenGetter(),
         allowedDomains: ['example.com'],
         disallowedRoutes: ['example.com/examplebadroute/']
       }

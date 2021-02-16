@@ -1,12 +1,10 @@
 <div class="cls-remote-video-box">
-  <video id="remoteVideo" autoplay  class="cls-remote-video"></video>
+  <video id="remoteVideo" autoplay loop playsinline class="cls-remote-video"></video>
 </div>
 
-
-
-<!-- <div class="cls-local-video-box">
-  <video id="localVideo" autoplay  class="cls-local-video"></video>
-</div> -->
+<div class="cls-local-video-box">
+  <video id="localVideo" autoplay loop playsinline muted class="cls-local-video"></video>
+</div>
 
 
 
@@ -14,42 +12,22 @@
 <router-outlet>
   <div class="container">
 
-    <div class="cls-videocall-box">
-      <video id="freeRemoteVideo" autoplay class="cls-remote-video-content"></video>
-      <!-- <video id="freeScreenShareVideo" autoplay class="cls-ss-video-content"></video> -->
-    </div>
-
-    <div class="cls-screen-share-box">
-      <!-- <video id="freeRemoteVideo" autoplay class="cls-remote-video-content"></video> -->
-      <video id="freeScreenShareVideo" autoplay class="cls-ss-video-content"></video>
-    </div>
-
-
-
     <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-bottom">
 
       <div class="row">
-        <div class="col-4">
 
+
+        <div class="cls-cmd-btns">
+          <app-funct-buttons></app-funct-buttons>
         </div>
 
 
 
+        <!-- <div class="col-4">
+
+        </div>
 
         <div class="col-4">
-
-          <button mat-fab color="basic"
-                    style="color: #324AF0; margin-right: 20px;" type="button"
-                    (click)="sendingDTMF('#', 'lockBtn');"
-                    #tooltip="matTooltip"
-                    [matTooltip]="lockMsg"
-                    matTooltipPosition="below"
-                    matTooltipHideDelay="100"
-                    *ngIf="globals.moderator"
-            >
-            <mat-icon *ngIf="!lockRoom">lock_open</mat-icon>
-            <mat-icon *ngIf="lockRoom">lock</mat-icon>
-          </button>
 
           <button mat-fab color="basic" style="color: #D35400; margin-right: 20px;"
                     type="button"
@@ -75,26 +53,6 @@
             <mat-icon *ngIf="!audioActive">mic</mat-icon>
           </button>
 
-          <!-- <button mat-fab color="basic" style="color: #0e470e; margin-right: 20px;" type="button" (click)="screenSharing()"
-                    #tooltip="matTooltip"
-                    matTooltip="Screen Share"
-                    matTooltipPosition="below"
-                    matTooltipHideDelay="100"
-            >
-            <mat-icon *ngIf="!screenShare">screen_share</mat-icon>
-            <mat-icon *ngIf="screenShare">stop_screen_share</mat-icon>
-          </button> -->
-
-          <!-- <button mat-fab style="color: #e1e6e1; margin-right: 20px; background-color: rgb(40, 75, 75);" type="button" (click)="addingPeople()"
-                    #tooltip="matTooltip"
-                    matTooltip="Invite People"
-                    matTooltipPosition="below"
-                    matTooltipHideDelay="100"
-            >
-            <mat-icon *ngIf="!addPeople">person_add</mat-icon>
-            <mat-icon *ngIf="addPeople">undo</mat-icon>
-          </button> -->
-
           <button mat-fab style="color: rgb(250, 250, 250); background-color: rgb(246, 4, 53);" type="button" (click)="hangupCall()"
                     #tooltip="matTooltip"
                     matTooltip="Hangup"
@@ -103,58 +61,8 @@
             >
               <mat-icon>call_end</mat-icon>
             </button>
-
-
-        </div>
-
-
-
-
-        <div class="col-4">
-
-
-
-
-          <mat-form-field class="example-chip-list" *ngIf="addPeople">
-            <mat-chip-list #chipList aria-label="Fruit selection">
-              <mat-chip *ngFor="let fruit of fruits" [selectable]="selectable"
-                      [removable]="removable" (removed)="remove(fruit)">
-                {{fruit.name}}
-                <mat-icon matChipRemove *ngIf="removable">cancel</mat-icon>
-              </mat-chip>
-
-              <input placeholder="Input e-mail then Enter"
-                    [matChipInputFor]="chipList"
-                    [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-                    [matChipInputAddOnBlur]="addOnBlur"
-                    (matChipInputTokenEnd)="add($event)">
-            </mat-chip-list>
-            <button mat-button matSuffix mat-icon-button color="warn" class="bg-light" (click)="sendingInvita()">
-              <mat-icon>send</mat-icon>
-            </button>
-          </mat-form-field>
-
-
-
-
-
-        </div>
-
-
-
-
+        </div> -->
       </div>
-
-
-
-
-
     </nav>
-
-
-
-
-
-
   </div>
 </router-outlet>

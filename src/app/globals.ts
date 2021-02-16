@@ -1,24 +1,29 @@
 import { Injectable } from '@angular/core';
-// import { Howl } from 'howler';
 
 @Injectable()
+
+// ***** Class to handle global variables that control several objects and functions in the UI
 export class Globals {
 
+  // ***** Object to be used for setup the user credentials, set as Local Storage and to be
+  // ***** reuse it to make login when the user refreh de web site
   userCredentials = { ext: null,
                       pwd: null,
                       fn: null,
                       dom: null,
                       wss: null };
+
   incomingCall = false;
   outgoingCall = false;
-  onMeeting = false;
-  moderator = false;
-  // outgoingCallSound = new Howl({src: ['https://dhcomm.net/sounds/RingBack.mp3'], loop: true, html5 : true});
-  // incomingcallSound = new Howl({src: ['https://dhcomm.net/sounds/warble4-trill.wav'], loop: true, html5 : true});
+  outgoingNumber = '';
+  incomingNumber = '';
 
-  videoNewMeeting: boolean;
-  audioNewMeeting: boolean;
+  onCall: boolean;
+  showOncall: boolean;
+
+  videoChat: boolean;
   maxListCalls = 3;
   showNavBar: boolean;
+
 
 }

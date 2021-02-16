@@ -1,0 +1,70 @@
+<div class="phone">
+
+  <table class="table" (click)="$event.stopPropagation()">
+    <tr>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('1')">1</button>
+      </td>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('2')" >2
+          <span class="cls-letters">ABC</span>
+        </button>
+      </td>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('3')" >3
+            <span class="cls-letters">DEF</span>
+        </button>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('4')" >4
+            <span class="cls-letters">GHI</span>
+        </button>
+      </td>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('5')" >5
+            <span class="cls-letters">JKL</span>
+        </button>
+      </td>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('6')" >6
+            <span class="cls-letters">MNO</span>
+        </button>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('7')" >7
+            <span class="cls-letters">PQRS</span>
+        </button>
+      </td>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('8')" >8
+            <span class="cls-letters">TUV</span>
+        </button>
+      </td>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('9')" >9
+            <span class="cls-letters">WXYZ</span>
+        </button>
+      </td>
+    </tr>
+
+    <tr>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('*')" >*</button>
+      </td>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('0')" >0</button>
+      </td>
+      <td>
+        <button class="btn cls-btn-dial-pad" (click)="getTone('#')" >#</button>
+      </td>
+    </tr>
+
+  </table>
+
+</div>

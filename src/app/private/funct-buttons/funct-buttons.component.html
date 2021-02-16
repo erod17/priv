@@ -1,0 +1,88 @@
+<div class="cls-caller-btns">
+
+  <!-- <button mat-icon-button style="color: #141414;" (click)="switchDialpad()"
+          #tooltip="matTooltip"
+          matTooltip="Show Dialpad"
+          matTooltipPosition="above"
+          matTooltipHideDelay="100"
+          id="btnDialpad"
+          [hidden]="!glob.onCall"
+  >
+    <mat-icon>dialpad</mat-icon>
+  </button> -->
+
+  <button mat-icon-button (click)="makeCall(false)"
+        [style]="{'color': (glob.outgoingNumber.length >= 4 ? '#23BE28' : '#EEF2F2' ) }"
+        type="button"
+        [disabled]="glob.outgoingNumber.length < 4 || glob.onCall"
+        [hidden]="glob.onCall || glob.outgoingCall"
+        #tooltip="matTooltip"
+        matTooltip="Make Call"
+        matTooltipPosition="above"
+        matTooltipHideDelay="100"
+    >
+      <mat-icon>phone</mat-icon>
+  </button>
+
+  <button mat-icon-button (click)="hangupCall()"
+    style="color: #CE3954;"
+    *ngIf="glob.outgoingCall || glob.onCall"
+    #tooltip="matTooltip"
+    [matTooltip]="(glob.outgoingCall ? 'Cancel' : 'Hangup')"
+    matTooltipPosition="above"
+    matTooltipHideDelay="100"
+    id="btnHangup"
+  >
+  <mat-icon>call_end</mat-icon>
+  </button>
+
+  <button mat-icon-button  (click)="makeCall(true)" [hidden]="glob.outgoingCall || (glob.onCall && !sipJs.videoActive())"
+          [style]="{'color': ((glob.outgoingNumber.length >= 4 || glob.onCall) ? '#005cb7' : '#EEF2F2' ) }"
+          #tooltip="matTooltip"
+          [disabled]="glob.outgoingNumber.length < 4 && !glob.onCall"
+          [matTooltip]="(!glob.onCall) ? 'Video Chat' : (!sipJs.localVideoActive() ? 'Activate Camera' : 'Deactivate Camera')"
+          matTooltipPosition="above"
+          matTooltipHideDelay="100"
+          id="btnVideo"
+
+  >
+    <mat-icon *ngIf="!sipJs.localVideoActive()">videocam</mat-icon>
+    <mat-icon *ngIf="sipJs.localVideoActive()">videocam_off</mat-icon>
+  </button>
+
+  <button mat-icon-button style="color:#272322;" [hidden]="!glob.onCall"
+          (click)="setMute()"
+          #tooltip="matTooltip"
+          [matTooltip]="(!sipJs.isMuted() ? 'Mute' : 'Unmute')"
+          matTooltipPosition="above"
+          matTooltipHideDelay="100"
+          id="btnMute"
+  >
+    <mat-icon *ngIf="!sipJs.isMuted()">mic_off</mat-icon>
+    <mat-icon *ngIf="sipJs.isMuted()">mic</mat-icon>
+  </button>
+
+  <!-- <button mat-icon-button style="color:#ff4500;" (click)="setHold()"
+          #tooltip="matTooltip"
+          [matTooltip]="(!sipJs.isHeld() ? 'Hold' : 'Unhold')"
+          matTooltipPosition="above"
+          matTooltipHideDelay="100"
+          id="btnHold"
+          [hidden]="!glob.onCall"
+  >
+    <mat-icon *ngIf="sipJs.isHeld()">phone_paused</mat-icon>
+    <mat-icon *ngIf="!sipJs.isHeld()">phone_enabled</mat-icon>
+  </button> -->
+
+  <!-- <button mat-icon-button style="color:	#b8860b;" (click)="transferCall()"
+          #tooltip="matTooltip"
+          matTooltip="Transfer Call"
+          matTooltipPosition="above"
+          matTooltipHideDelay="100"
+          id="btnTransfer"
+          [hidden]="!glob.onCall"
+  >
+    <mat-icon>phone_forwarded</mat-icon>
+  </button> -->
+
+</div>

@@ -1,9 +1,9 @@
-import { Injectable, ɵConsole, ViewChild } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import audioPlayer from './sounds.service';
 import { ToneService } from './tone.service';
 import { inspect } from 'util';
-// import * as SIP from 'sip.js';
+import { Howl } from 'howler';
 import {
   Invitation,
   Inviter,
@@ -24,14 +24,19 @@ import {
   RegistererState,
   RegistererUnregisterOptions,
   InviterInviteOptions,
-  Message
+  Message,
+  SessionInviteOptions,
+  Messager,
+  RequestPendingError,
+  Bye
 } from 'sip.js';
 import { SimpleUserDelegate } from 'sip.js/lib/platform/web/simple-user/simple-user-delegate';
-// import { SimpleUserOptions } from 'sip.js/lib/platform/web/simple-user/simple-user-options';
-import { SessionDescriptionHandler, SimpleUserOptions } from 'sip.js/lib/platform/web';
+import { SimpleUserOptions } from 'sip.js/lib/platform/web/simple-user/simple-user-options';
+import { SessionDescriptionHandler } from 'sip.js/lib/platform/web';
+import { OutgoingInviteRequest } from 'sip.js/lib/core';
 
 import { Globals } from '../globals';
-// import { ConsoleReporter } from 'jasmine';
+
 
 
 function _window(idElement: any): any {
@@ -43,86 +48,64 @@ function _window(idElement: any): any {
   providedIn: 'root'
 })
 
-
+// *************************************************************************************** //
+// ***** Main Service Class, which makes use of the several SIP.js features to handle **** //
+// ***** everything about the WebRTC services. ******************************************* //
+// *************************************************************************************** //
 export class SipjsService {
 
-  /** Delegate. */
+  // ***** Delegate. ***** //
   public delegate: SimpleUserDelegate | undefined;
 
   globals: Globals;
+  private held = false;
+  private muted = false;
   private attemptingReconnection = false;
+  private registerRequested = false;
+  private connectRequested = false;
+  private offeredAudio = false;
+  private offeredVideo = false;
+  private remoteVideo = false;
+  public localVideo = false;
+  private activeCall = false;
   private userAgent: UserAgent;
   private registerer: Registerer;
-  private options: SimpleUserOptions;
+  private options: SimpleUserOptions = {};
   private session: Session | undefined = undefined;
   private mediaElement: any;
-
-  public state = {
-    init            : false,
-    status          : 'disconnected',
-    session         : null,
-    ringing         : false,
-    incomingSession : null,
-    autoanswer      : false
-  };
-
-  public screenSharingMedia = {
-    sessionDescriptionHandlerOptions : {
-      constraints: {
-        audio: true,
-        video: {mediaSource: 'screen'}
-      }
-    }
-  };
-  chatMedia: { sessionDescriptionHandlerOptions: { constraints: { audio: any; video: any; }; }; };
+  private audioElement: HTMLAudioElement;
+  private chatMedia: { sessionDescriptionHandlerOptions: { constraints: { audio: any; video: any; }; }; };
+  private outgoingCallSound = new Howl({src: ['https://dhcomm.net/sounds/RingBack.mp3'], loop: true, html5 : true});
+  private incomingcallSound = new Howl({src: ['https://dhcomm.net/sounds/warble4-trill.wav'], loop: true, html5 : true});
 
 
   constructor(
     public toneService: ToneService,
     public router: Router,
-    globals: Globals
-
+    globals: Globals,
   ) {
+
     audioPlayer.initialize();
     this.globals = globals;
 
+    // Delegate
+    this.delegate = this.options.delegate;
   }
 
-  public async setState(newState: any): Promise<void> {
-    // console.log(inspect(newState));
-    this.state = await Object.assign({}, this.state, newState);
-    const vSess = inspect(newState);
-    console.log(JSON.stringify(vSess));
-    window.localStorage.setItem('vc-Active', JSON.stringify(vSess));
-    return;
-  }
+  // ***** The function where is created the User Agent (UA) against the SIP server  ***** //
+  public async connect(userInfo: any): Promise<any> {
 
-  async clearSessions(): Promise<void> {
-    this.setState({
-      session: null,
-      incomingSession: null
-    });
-  }
-
-  async getState(state: any): Promise<void> {
-    return this.state[state];
-  }
-
-  public async connect(): Promise<any> {
-
-    console.log(this.globals.userCredentials);
-
-    // Setup SIPJs
+    // ***** Setup SIPJs ***** //
     try {
 
         const transportOptions = {
-          server: 'wss://' + this.globals.userCredentials.wss + ':7443',
+          server: 'wss://' + userInfo.dom + ':' + userInfo.wss,
           traceSip: true,
           bundlePolicy: 'max-bundle',
           rtcpMuxPolicy: 'negotiate'
         };
 
-        const uri = UserAgent.makeURI('sip:' + this.globals.userCredentials.ext + '@' + this.globals.userCredentials.dom);
+        const uri = UserAgent.makeURI('sip:' + userInfo.ext + '@' + userInfo.dom + ':' + userInfo.wss);
 
         if (!uri) {
           console.log('SIPJS Error, URI error');
@@ -131,123 +114,140 @@ export class SipjsService {
         } else {
 
           const userAgentOptions: UserAgentOptions = {
-            authorizationPassword: this.globals.userCredentials.pwd,
-            authorizationUsername: this.globals.userCredentials.ext,
+            authorizationPassword: userInfo.pwd,
+            authorizationUsername: userInfo.ext,
             uri,
             transportOptions
           };
 
+          // ***** UserAgent ***** //
           this.userAgent = new UserAgent(userAgentOptions);
 
+          // ***** UserAgent's delegate ***** //
           this.userAgent.delegate =  {
             onInvite: (invitation: Invitation): void => {
-              if (invitation) {
-                this.incomingCall(invitation);
+
+              // ***** An Invitation is a Session ***** //
+              const incomingSession: Session = invitation;
+
+              // ***** If the user is on a call and anothe call is ongoing, a hangup will be executed and the  ***** //
+              // ***** cuurrent call will be connected with the new call requested. ******************************** //
+              if (this.session) {
+                console.log(this.session);
+                console.log(invitation);
+                alert('Incoming call, you will be connected on this');
+                this.terminate();
+                this.incomingCall(invitation, (this.offeredVideo ? true : false));
+
+                return;
               }
+
+              // ================================================================//
+              if (invitation) {
+                // ***** If there is an incoming call this will be handle on the following function ***** //
+                this.incomingCall(invitation, (this.offeredVideo ? true : false));
+              }
+
 
             },
             onConnect: (): void => {
-
+              console.log('onConnect');
             },
-            onDisconnect: (error: Error): void => {
-              alert('Disconnect   :::  ' + error);
-              this.attemptReconnection();
+            // ***** when connection issues happen, this method is triggered by going to the reconnection function ***** //
+            onDisconnect: async (error: Error): Promise<void> => {
+              alert('Disconnect   :::>  ' + error);
+              await this.attemptReconnection();
 
             },
             onRefer: (referral: Referral): void => {
               alert('On Refer');
             },
             onMessage: (message: Message): void => {
-
+              // alert('Message' + message);
             },
-            // onReject: (): void => {
-
-            // }
+            onNotify: (notification: Notification) => {
+              // alert('onNotify invitado ::: lin -> 264');
+              console.log(notification.request.body);
+            },
+            onRegister: (registration: Registerer) => {
+              alert('On Register  ::: -> lin 267');
+            },
+            onReferRequest: () => {
+              alert('onReferRequest');
+            },
+            onRegisterRequest: () => {
+              alert('onRegisterRequest');
+            }
           };
 
-
-
-
+          // ***** Check if the UA has been started, if don't it'll be initialized and registered in the SIP Server *****//
           if (this.userAgent.state !== UserAgentState.Started) {
-
-            await this.userAgent.start()
-              .then(() => {
-                this.register();
-              })
-              .catch((error: Error) => {
-                console.log('SIPJS Error starting UA....', error);
-              });
+            await this.userAgent.start();
+            await this.register();
           }
-
-          if (!this.session) {
-            this.router.navigate(['dashboard']);
-          }
-
         }
+
+        return this.registerer;
 
     } catch (error) {
       console.log('JsSIP config error', error);
-      return;
+      return false;
     }
   }
 
-  private async incomingCall(session: Session): Promise<void> {
-
-    console.log(session);
-    this.globals.incomingCall = true;
-
-    // Use our configured constraints as options for any Inviter created as result of a REFER
-    // const referralInviterOptions: InviterOptions = {
-    //   sessionDescriptionHandlerOptions: { constraints: this.setMedia().sessionDescriptionHandlerOptions.constraints }
-    // };
-
-    // Initialize our session
-    this.initSession(session, await this.setMedia());
-
-
-  }
-
+  // ***** Function that makes the UA registration into the SIP Server ***** //
   private async register(registererOptions?: RegistererOptions, registererRegisterOptions?: RegistererRegisterOptions): Promise<void> {
 
-    this.registerer = new Registerer(this.userAgent, registererOptions);
-    this.registerer.stateChange.addListener((state: RegistererState) => {
-      switch (state) {
-        case RegistererState.Initial:
-          break;
-        case RegistererState.Registered:
-          if (this.delegate && this.delegate.onRegistered) {
-            this.delegate.onRegistered();
-          }
-          break;
-        case RegistererState.Unregistered:
-          if (this.delegate && this.delegate.onUnregistered) {
-            this.delegate.onUnregistered();
-          }
-          break;
-        case RegistererState.Terminated:
-          this.registerer = undefined;
-          break;
-        default:
-          throw new Error('Unknown registerer state.');
-      }
-    });
+    this.registerRequested = true;
+    console.log(this.registerer);
+
+    if (!this.registerer) {
+
+      this.registerer = new Registerer(this.userAgent, registererOptions);
+      this.registerer.stateChange.addListener((state: RegistererState) => {
+        switch (state) {
+          case RegistererState.Initial:
+            break;
+          case RegistererState.Registered:
+            if (this.delegate && this.delegate.onRegistered) {
+              this.delegate.onRegistered();
+            }
+            break;
+          case RegistererState.Unregistered:
+            if (this.delegate && this.delegate.onUnregistered) {
+              this.delegate.onUnregistered();
+            }
+            break;
+          case RegistererState.Terminated:
+            this.registerer = undefined;
+            break;
+          default:
+            throw new Error('Unknown registerer state.');
+        }
+
+      });
+    }
 
     return this.registerer.register(registererRegisterOptions).then(() => {
       return;
     });
+
   }
 
-
+  // ***** Helper to disconnect the UA, after that, the method unregister is calling in order to do the complete log out ***** //
   public async disconnect(): Promise<void> {
     await this.userAgent.stop()
-      .then(() => {
-        this.unregister();
+      .then(async () => {
+        await this.unregister();
+        window.localStorage.removeItem('userCredentials');
+        window.localStorage.removeItem('onCall');
       })
       .catch((error: Error) => {
         console.log('SIPJS Error disconnect UA....', error);
       });
   }
 
+  // ***** Method for make the final log out from SIP server ***** //
   private async unregister(registererUnregisterOptions?: RegistererUnregisterOptions): Promise<void> {
 
     if (!this.registerer) {
@@ -256,112 +256,244 @@ export class SipjsService {
 
     return this.registerer.unregister(registererUnregisterOptions)
     .then(() => {
-      window.localStorage.removeItem('token');
-      window.localStorage.removeItem('userInfo');
-      window.localStorage.removeItem('vc-Active');
+      window.localStorage.removeItem('userCredentials');
 
       return;
     });
   }
 
+  // ***** Helper function for handle the incoming calls ***** //
+  private async incomingCall(session: Session, vid?: boolean): Promise<void> {
 
-  async setMedia(): Promise<any> {
+    // tslint:disable-next-line:no-string-literal
+    const varNumb = await session.remoteIdentity.uri['_normal'].user;
+    this.globals.incomingCall = true;
+    this.globals.incomingNumber = varNumb;
+
+    // ***** Initialize the incoming call session making use of the same function ***** //
+    this.initSession(session).then(() => {
+      this.incomingcallSound.play();
+    });
+  }
+
+  // ***** Helper function to answer the incoming calls ***** //
+  public async answerCall(invitationAcceptOptions?: InvitationAcceptOptions): Promise<void> {
+
+    if (!this.session) {
+      return Promise.reject(new Error('Session does not exist.'));
+    }
+
+    if (!(this.session instanceof Invitation)) {
+      return Promise.reject(new Error('Session not instance of Invitation.'));
+    }
+
+    // ***** Here we make use of the SDP (registry of the current incoming-call) to ***** //
+    // ***** evaluate if the call comes in with the Video option ************************ //
+    console.log(this.session.request.body);
+    const sdp = this.session.request.body;
+    if ((/\r\nm=video /).test(sdp)) {
+      this.localVideo = true;
+      this.offeredVideo = true;
+    }
+
+    // ***** Using the ACCEPT-SIP.js's method, we grab the call with its options ***** //
+    return await this.session.accept(await this.setMedia((this.offeredVideo ? true : false)));
+  }
+
+  // ***** Helper function for decline or reject incoming calls ***** //
+  public async decline(): Promise<void> {
+
+    if (!this.session) {
+      return Promise.reject(new Error('Session does not exist.'));
+    }
+
+    if (!(this.session instanceof Invitation)) {
+      return Promise.reject(new Error('Session not instance of Invitation.'));
+    }
+
+    // **** After rejecting the call, the sounds are cleaned ***** //
+    await this.session.reject().then(() => {
+      this.incomingcallSound.stop();
+      this.outgoingCallSound.stop();
+      this.activeCall = false;
+    });
+  }
+
+  // ***** According to the value passed top this helper, will be activated the Video Option ***** //
+  async setMedia(pVid?: boolean): Promise<any> {
 
     const chatMedia = {
       sessionDescriptionHandlerOptions : {
         constraints: {
-          audio: (window.localStorage.getItem('audioNewMeeting') === 'true' ? true : false),
-          video: (window.localStorage.getItem('videoNewMeeting') === 'true' ? true : false)
+          audio: true,
+          video: pVid
         }
       }
     };
-
-    console.log(chatMedia);
     return chatMedia;
   }
 
-  public async makeCall(destination: string, inviterOptions?: InviterOptions, inviterInviteOptions?: InviterInviteOptions): Promise<void> {
+  // ************************************************ //
+  // ***** Function where the calls are started ***** //
+  // ************************************************ //
+  public async makeCall(destination: string,
+                        vidOpt?: boolean,
+                        inviterOptions?: InviterOptions,
+                        inviterInviteOptions?: InviterInviteOptions): Promise<void> {
 
     if (this.session) {
+      this.terminate();
       return Promise.reject(new Error('Session already exists.'));
     }
 
-    // const vca = window.localStorage.getItem('vc-Active');
-    // if (vca) {
-    //   // alert('Connect   :::  ' + 'Looks like you have an Active Videoconference');
-    //   alert(JSON.parse(vca));
-    //   this.session = JSON.parse(vca);
-    //   return this.reInvite();
-    // }
-    const num = 'sip:100@pbx.fokuz.online:5060';
+    // tslint:disable-next-line:no-string-literal
+    const to = this.userAgent['options'].uri.raw;
+    const num = to.scheme + ':' + destination + '@' + to.host + ':' + to.port;
+
+    // ***** The URI target o call receiver dir is prepared through this sip.js function ***** //
     const target = UserAgent.makeURI(num);
-    // const target = UserAgent.makeURI(destination);
-    console.log(target);
 
     if (!target) {
       return Promise.reject(new Error(`Failed to create a valid URI from "${num}"`));
     }
 
-    // Create a new Inviter for the outgoing Session
-    const inviter = new Inviter(this.userAgent, target, await this.setMedia());
+    // ***** Create a new Inviter for the outgoing Session ***** //
+    const inviter = new Inviter(this.userAgent, target, await this.setMedia(vidOpt));
 
-    // Send INVITE
-    return this.sendInvite(inviter, inviterOptions, inviterInviteOptions).then(() => {
+    // ***** Options including delegate to capture response messages ***** //
+    const inviteOptions: InviterInviteOptions = {
+      requestDelegate: {
+        onProgress: (response) => {
+          console.log('************ Invite response < onProgress >**************');
+          console.log(response);
+        },
+        onAccept: (response) => {
+          console.log('************ Positive response < onAccept > **************');
+          console.log(response.message.body);
+          const sdp = response.message.body;
+
+          if ((/\r\na=end-of-candidates/).test(sdp)) {
+            alert('Call has been rejected!');
+            return this.terminate();
+          }
+
+          this.activeCall = true;
+
+        },
+        onReject: (response) => {
+          console.log('************ Negative response < onReject > OUTGOING CALL **************');
+          console.log(response);
+          window.alert('************ Negative response < onReject > OUTGOING CALL **************');
+          inviter.dispose();
+        },
+        onTrying: (response) => {
+          // alert('onTrying');
+        }
+
+
+      },
+      sessionDescriptionHandlerOptions: {
+        constraints: {
+          audio: true,
+          video: vidOpt
+        }
+      }
+    };
+
+
+    // ***** If everything is ok, the INVITE will be sent ***** //
+    return this.sendInvite(inviter, inviterOptions, inviteOptions).then(() => {
       return;
     });
   }
 
-  /** Helper function to init send then send invite. */
-  private async sendInvite(inviter: Inviter, inviterOptions?: InviterOptions, inviterInviteOptions?: InviterInviteOptions): Promise<void> {
-    // Initialize our session
-    this.initSession(inviter, inviterOptions);
 
-    // Send the INVITE
-    return inviter.invite(inviterInviteOptions).then(() => {
-      console.log('INVITE has been sent');
-    });
+  // ***** Helper function to init send then send invite. ***** //
+  private async sendInvite(inviter: Inviter, inviterOptions?: InviterOptions, inviterInviteOptions?: InviterInviteOptions): Promise<void> {
+
+    console.log(inviter.sessionDescriptionHandler);
+    console.log(inviterInviteOptions.sessionDescriptionHandlerOptions.constraints);
+
+    // ***** Initialize our session -- USING THE SAME METHOD FOR THE INCOMING CALL UA -- ***** //
+    this.initSession(inviter, inviterInviteOptions);
+
+    // tslint:disable-next-line:no-string-literal
+    const vOpt = inviterInviteOptions.sessionDescriptionHandlerOptions.constraints['video'];
+
+    // ***** This is the method which Send the INVITE to the other party ***** //
+    return inviter.invite(inviterInviteOptions)
+                        .then((request: OutgoingInviteRequest) => {
+                          console.log('***************** Successfully < SENT INVITE > *********************');
+                          console.log('INVITE request');
+                          console.log(request);
+                          this.outgoingCallSound.play();
+                          this.offeredVideo = (vOpt ? true : false);
+                        })
+                        .catch((error: Error) => {
+                          console.log('Failed to send INVITE');
+                          alert('Failed to send INVITE');
+                        });
   }
 
+  // ********************************************** --- INIT SESSION --- *************************************************** //
+  // ***** This function make possible the init session for both parties < Caller and Callee > to connect between them ***** //
+  // ***** handle inside the whole neccesarries method in order to START and FINISH the calls  ***************************** //
+  public async initSession(session: Session, referralInviterOptions?: InviterOptions): Promise<void> {
 
-  private async initSession(session: Session, referralInviterOptions?: InviterOptions): Promise<void> {
-    // Set session
+    // **** Set session ***** //
     this.session = session;
 
-    this.setState({
-        session         : this.session,
-        incomingSession : null
-    });
-
-    // Setup session state change handler
+    // ***** Setup session state change handler ***** //
     this.session.stateChange.addListener((state: SessionState) => {
 
       if (this.session !== session) {
-        return; // if our session has changed, just return
+        return; // *****  if our session has changed, just return ***** //
       }
-
       switch (state) {
         case SessionState.Initial:
           // alert('Initial');
           break;
         case SessionState.Establishing:
           // alert('Establishing');
-          // this.changeVideoCodec({channels: 1, clockRate: 8000, mimeType: 'audio/CN', payloadType: 106, sdpFmtpLine: 'ptime=20'});
+          if (this.session.sessionDescriptionHandlerOptions.constraints['video']) {
+            this.setupLocalMedia();
+            this.offeredVideo = true;
+            this.router.navigate(['room']);
+          }
+
           break;
         case SessionState.Established:
           // alert('Established');
-          // this.setupLocalMedia();
+          this.globals.onCall = true;
+          this.globals.outgoingCall = false;
+          this.outgoingCallSound.stop();
+          this.globals.incomingCall = false;
+          this.incomingcallSound.stop();
+          window.localStorage.setItem('onCall', 'true');
+          if (this.session.sessionDescriptionHandlerOptions.constraints['video']) {
+            this.setupLocalMedia();
+            this.localVideo = true;
+          }
           this.setupRemoteMedia();
-
+          this.removeSounds();
           break;
         case SessionState.Terminating:
-          // fall through
           // alert('Terminating');
           break;
         case SessionState.Terminated:
+          // alert('Terminated');
+          this.globals.onCall = false;
+          this.globals.incomingNumber = '';
+          this.globals.outgoingNumber = '';
           this.globals.incomingCall = false;
-          this.session = undefined;
-          window.localStorage.removeItem('vc-Active');
+          this.incomingcallSound.stop();
+          this.globals.outgoingCall = false;
+          this.outgoingCallSound.stop();
+          this.localVideo = false;
+          this.offeredVideo = false;
+          window.localStorage.setItem('onCall', 'false');
           this.cleanupMedia();
+          this.session = undefined;
 
           break;
         default:
@@ -371,135 +503,61 @@ export class SipjsService {
 
 
     this.session.delegate = {
-      onRefer(referral: Referral): void {
-        // ...
-        alert('onRefer incomingh');
-      },
-
-      onInvite(request: any, response: string, statusCode: number): void {
-        // ...
-        alert('onInvite');
-      },
-
-      onInfo(info: Info): void {
-        alert('onInfo');
-      },
-
-      onNotify(notification: Notification): void {
-        alert('onNotify');
-      },
-
-      onSessionDescriptionHandler(sessionDescriptionHandler: SessionDescriptionHandler, provisional: boolean): void {
-        // alert('onSessionDescriptionHandler');
-
-      }
-
-
-    };
-
-  }
-
-  public async reInvite(): Promise<void> {
-
-    const target = UserAgent.makeURI('sip:331000000000@pbx.fokuz.online');
-    // const inviter = new Inviter(this.userAgent, target, await this.setMedia());
-
-
-    // Send re-INVITE
-    return this.session
-      .invite(await this.setMedia())
-      .then(() => {
-        console.log('RE-INVITE has been sent');
-        // this.setupLocalMedia();
-        this.setupRemoteMedia();
-      })
-      .catch((error: Error) => {
-        if (error) {
-          console.error(`A RE-INVITE request is already in progress.`);
+        onInvite: async (request) => {
+          // alert('onInvite');
+        },
+        onRefer: async (referral: Referral) => {
+          alert('Incoming Session <*** onRefer ***>');
+          referral
+                .accept()
+                .then(() => this.sendInvite(referral.makeInviter(referralInviterOptions), referralInviterOptions))
+                .catch((error: Error) => {
+                  console.error(error.message);
+                });
+        },
+        onNotify: async (notification: Notification) => {
+          alert('Incoming Session <*** onNotify ***>');
+        },
+        onBye: async (bye: Bye) => {
+          // alert('Incoming Session <*** onBye ***>');
+        },
+        onInfo: async (info: Info) => {
+          alert('Incoming Session <*** onInfo ***>');
+        },
+        onMessage: async (message: Message) => {
+          alert('Incoming Session <*** onMessage ***>');
+        },
+        onSessionDescriptionHandler: async () => {
+          // const vidOpt = (this.session.sessionDescriptionHandlerOptions.constraints['video']);
+          console.log(this.session.sessionDescriptionHandlerOptions);
+          // alert('Incoming Session <*** onSessionDescriptionHandler ***>   ');
         }
-        throw error;
-      });
+    };
   }
 
-  private changeVideoCodec(mimeType: {}): void {
+  // ***** Helper function to attach local media to html elements. ***** //
+  private async setupLocalMedia(): Promise<void> {
 
-    const sdh = this.session?.sessionDescriptionHandler;
-    if (!sdh) {
-      return undefined;
-    }
-    if (!(sdh instanceof SessionDescriptionHandler)) {
-      throw new Error('Session description handler not instance of web SessionDescriptionHandler');
-    }
-
-
-    const peerConnection = sdh.peerConnection;
-    if (!peerConnection) {
-      throw new Error('Peer connection closed.');
-    }
-
-    const transceivers = peerConnection.getTransceivers();
-
-
-
-    transceivers.forEach(transceiver => {
-      const kind = transceiver.sender.track.kind;
-      const sendCodecs = RTCRtpSender.getCapabilities(kind).codecs;
-      const recvCodecs = RTCRtpReceiver.getCapabilities(kind).codecs;
-
-      console.log(sendCodecs);
-      console.log(recvCodecs);
-
-
-
-      if (kind === 'audio') {
-      //   // sendCodecs = this.preferCodec(mimeType, 'audio/CN');
-      //   // recvCodecs = this.preferCodec(mimeType, 'audio/CN');
-
-      //   transceiver.setCodecPreferences([...sendCodecs, ...recvCodecs]);
-      transceiver.setCodecPreferences([{channels: 1, clockRate: 16000, mimeType: 'audio/telephone-event'}]);
-      }
-    });
-
-    // peerConnection.onnegotiationneeded(event);
-  }
-
-  preferCodec(codecs, mimeType): any {
-    const otherCodecs = [];
-    const sortedCodecs = [];
-    const count = codecs.length;
-
-    codecs.forEach(codec => {
-      if (codec.mimeType === mimeType) {
-        sortedCodecs.push(codec);
-      } else {
-        otherCodecs.push(codec);
-      }
-    });
-
-    return sortedCodecs.concat(otherCodecs);
-  }
-
-
-  /** Helper function to attach local media to html elements. */
-  private setupLocalMedia(): void {
-
-    this.mediaElement = window.document.getElementById('localVideo');
+    this.mediaElement = this.nativeWindow('localVideo');
 
     if (this.mediaElement) {
       const localStream = this.localMediaStream;
       if (!localStream) {
         throw new Error('Local media stream undefiend.');
       }
-      this.mediaElement.autoplay = true; // Safari hack, because you cannot call .play() from a non user action
+      this.mediaElement.autoplay = true; // ***** Safari hack, because you cannot call .play() from a non user action ***** //
+      this.mediaElement.playsinline = true;
+      this.mediaElement.controls = false;
+      this.mediaElement.muted = true;
       this.mediaElement.srcObject = localStream;
-      this.mediaElement.play().catch((error: Error) => {
+      await this.mediaElement.play().catch((error: Error) => {
         console.error(`Failed to play local media`);
         console.error(error.message);
       });
-      localStream.onaddtrack = (): void => {
+      localStream.onaddtrack = async (): Promise<void> => {
         console.log(`Local media onaddtrack`);
-        this.mediaElement.load(); // Safari hack, as it doesn't work otheriwse
-        this.mediaElement.play().catch((error: Error) => {
+        await this.mediaElement.load(); // ***** Safari hack, as it doesn't work otheriwse ***** //
+        await this.mediaElement.play().catch((error: Error) => {
           console.error(` Failed to play local media`);
           console.error(error.message);
         });
@@ -507,10 +565,10 @@ export class SipjsService {
     }
   }
 
-  /** Helper function to attach remote media to html elements. */
-  private setupRemoteMedia(): void {
+  // ***** Helper function to attach remote media to html elements. ***** //
+  private async setupRemoteMedia(): Promise<void> {
 
-    this.mediaElement = window.document.getElementById('remoteVideo');
+    this.mediaElement = this.nativeWindow('remoteVideo');
 
     if (this.mediaElement) {
       const remoteStream = this.remoteMediaStream;
@@ -519,16 +577,18 @@ export class SipjsService {
       if (!remoteStream) {
         throw new Error('Remote media stream undefiend.');
       }
-      this.mediaElement.autoplay = true; // Safari hack, because you cannot call .play() from a non user action
+      this.mediaElement.autoplay = true; // ***** Safari hack, because you cannot call .play() from a non user action ***** //
+      this.mediaElement.playsinline = true;
+      this.mediaElement.controls = false;
       this.mediaElement.srcObject = remoteStream;
-      this.mediaElement.play().catch((error: Error) => {
+      await this.mediaElement.play().catch((error: Error) => {
         console.error(`Failed to play remote media`);
         console.error(error.message);
       });
-      remoteStream.onaddtrack = (): void => {
+      remoteStream.onaddtrack = async (): Promise<void> => {
         console.log(`Remote media onaddtrack`);
-        this.mediaElement.load(); // Safari hack, as it doesn't work otheriwse
-        this.mediaElement.play().catch((error: Error) => {
+        await this.mediaElement.load(); // ***** Safari hack, as it doesn't work otheriwse ***** //
+        await this.mediaElement.play().catch((error: Error) => {
           console.error(` Failed to play remote media`);
           console.error(error.message);
         });
@@ -536,52 +596,17 @@ export class SipjsService {
     }
   }
 
-  /** Helper function to remove media from html elements. */
+  // ***** Helper function to remove media from html elements. ***** //
   private async cleanupMedia(): Promise<void> {
 
+    this.offeredVideo = false;
+    this.offeredAudio = false;
     if (this.mediaElement) {
-      // this.mediaElement.srcObject = null;
-      // this.mediaElement.pause();
-
       this.router.navigate(['dashboard']);
-
-
     }
+
   }
 
-
-  /** The local media stream. Undefined if call not answered. */
-  // get localMediaStream(): MediaStream | undefined {
-  //   const sdh = this.session?.sessionDescriptionHandler;
-  //   if (!sdh) {
-  //     return undefined;
-  //   }
-  //   if (!(sdh instanceof SessionDescriptionHandler)) {
-  //     throw new Error('Session description handler not instance of web SessionDescriptionHandler');
-  //   }
-
-
-  //   const peerConnection = sdh.peerConnection;
-  //   if (!peerConnection) {
-  //     throw new Error('Peer connection closed.');
-  //   }
-
-  //   let codecList = null;
-
-  //   peerConnection.getSenders().forEach((sender) => {
-  //     if (sender.track) {
-  //       console.log(sender.track);
-  //       codecList = sender.getParameters().codecs;
-  //       console.log(codecList);
-  //       if (sender.track.kind === 'video') {
-  //         sdh.localMediaStream.addTrack(sender.track);
-  //       }
-  //     }
-  //   });
-
-  //   console.log(sdh.localMediaStream);
-  //   return sdh.localMediaStream;
-  // }
 
   get localMediaStream(): MediaStream | undefined {
     const sdh = this.session?.sessionDescriptionHandler;
@@ -594,39 +619,6 @@ export class SipjsService {
     return sdh.localMediaStream;
   }
 
-
-
-  /** The remote media stream. Undefined if call not answered. */
-  // get remoteMediaStream(): MediaStream | undefined {
-  //   const sdh = this.session?.sessionDescriptionHandler;
-  //   if (!sdh) {
-  //     return undefined;
-  //   }
-  //   if (!(sdh instanceof SessionDescriptionHandler)) {
-  //     throw new Error('Session description handler not instance of web SessionDescriptionHandler');
-  //   }
-
-
-  //   const peerConnection = sdh.peerConnection;
-  //   if (!peerConnection) {
-  //     throw new Error('Peer connection closed.');
-  //   }
-
-  //   let codecList = null;
-
-  //   peerConnection.getReceivers().forEach((receiver) => {
-  //     if (receiver.track) {
-  //       console.log(receiver.track);
-  //       codecList = receiver.getParameters().codecs;
-  //       console.log(codecList);
-  //       sdh.remoteMediaStream.addTrack(receiver.track);
-  //     }
-  //   });
-
-  //   console.log(sdh.remoteMediaStream);
-  //   return sdh.remoteMediaStream;
-  // }
-
   get remoteMediaStream(): MediaStream | undefined {
     const sdh = this.session?.sessionDescriptionHandler;
     if (!sdh) {
@@ -638,16 +630,18 @@ export class SipjsService {
     return sdh.remoteMediaStream;
   }
 
-
+  // ***** Function called by the User Interfase ***** //
   public async hangupCall(): Promise<void> {
-
     return await this.terminate();
   }
 
 
+  // ***** Helper function that handle the finish of the call connection ***** //
   private async terminate(): Promise<void> {
 
-    console.log(`Terminating...`);
+    this.globals.outgoingNumber = '';
+    this.globals.incomingNumber = '';
+    this.globals.onCall = false;
 
     if (!this.session) {
       this.router.navigate(['dashboard']);
@@ -655,7 +649,6 @@ export class SipjsService {
     }
 
     switch (this.session.state) {
-
       case SessionState.Initial:
         if (this.session instanceof Inviter) {
           return this.session.cancel().then(() => {
@@ -689,6 +682,7 @@ export class SipjsService {
       case SessionState.Terminating:
         break;
       case SessionState.Terminated:
+        alert('terminated');
         break;
       default:
         throw new Error('Unknown state');
@@ -700,33 +694,7 @@ export class SipjsService {
     return Promise.resolve();
   }
 
-
-
-
-
-
-
-  public async answerCall(invitationAcceptOptions?: InvitationAcceptOptions): Promise<void> {
-
-    console.log(`Accepting Invitation...`);
-
-    if (!this.session) {
-      return Promise.reject(new Error('Session does not exist.'));
-    }
-
-    if (!(this.session instanceof Invitation)) {
-      return Promise.reject(new Error('Session not instance of Invitation.'));
-    }
-
-
-    this.router.navigate(['room']);
-    this.globals.incomingCall = false;
-    return await this.session.accept(this.chatMedia);
-  }
-
-
-
-
+  // ***** When connection issues show up, this function handle the UA reconnection authomatically ***** //
   private async attemptReconnection(reconnectionAttempt = 1): Promise<void> {
     const reconnectionAttempts = 3;
     const reconnectionDelay = 4;
@@ -752,13 +720,6 @@ export class SipjsService {
 
     setTimeout(
       () => {
-        // if (!this.connectRequested) {
-        //   this.logger.log(
-        //     `[${this.id}] Reconnection attempt ${reconnectionAttempt} of ${reconnectionAttempts} - aborted`
-        //   );
-        //   this.attemptingReconnection = false;
-        //   return; // If intentionally disconnected, don't reconnect.
-        // }
         this.userAgent
           .reconnect()
           .then(() => {
@@ -771,6 +732,7 @@ export class SipjsService {
             console.log(
               `Reconnection attempt ${reconnectionAttempt} of ${reconnectionAttempts} - failed`
             );
+            alert(`Reconnection attempt ${reconnectionAttempt} of ${reconnectionAttempts} - failed`);
             console.error(error.message);
             this.attemptingReconnection = false;
             this.attemptReconnection(++reconnectionAttempt);
@@ -780,10 +742,7 @@ export class SipjsService {
     );
   }
 
-
-
-
-
+  // ***** This demo is ready to send DTM pulsation to the SIP Server, this function handle that process ***** //
   public async sendDTMF(tone: string): Promise<void> {
     console.log(`sending DTMF...`);
 
@@ -795,7 +754,6 @@ export class SipjsService {
     if (!this.session) {
       return Promise.reject(new Error('Session does not exist.'));
     }
-
 
     console.log(` Sending DTMF tone: ${tone}`);
     const dtmf = tone;
@@ -811,12 +769,127 @@ export class SipjsService {
     return;
   }
 
-
-
-
+  // ***** Helper to get the objects around the DOM ***** //
   public nativeWindow(id: any): any {
     return _window(id);
   }
 
+  // ***** This helper return the UA status ***** //
+  public getConnState(): UserAgent {
+    return this.userAgent;
+  }
+
+
+
+  // ************************************************* //
+  // *** Stop all sounds and remove audio elements *** //
+  // ************************************************* //
+  public removeSounds(): void {
+    // If is ringing
+    this.toneService.stopAll();
+
+    // If is playing a message
+    audioPlayer.stopAll();
+
+    // If an audio element exist
+    if (this.audioElement) {
+        document.body.removeChild(this.audioElement);
+        this.audioElement = null;
+    }
+  }
+
+  // ***** Return the video option in the current session ***** //
+  public videoActive(): boolean {
+    return this.offeredVideo;
+  }
+
+  // ***** Return the loca video value in order to handle several options in the UI ***** //
+  public localVideoActive(): boolean {
+    return this.localVideo;
+  }
+
+  // ***** Helper function to enable/disable media tracks. ***** //
+  private enableReceiverTracks(enable: boolean): void {
+    if (!this.session) {
+      throw new Error('Session does not exist.');
+    }
+
+    const sessionDescriptionHandler = this.session.sessionDescriptionHandler;
+    if (!(sessionDescriptionHandler instanceof SessionDescriptionHandler)) {
+      throw new Error('Session\'s session description handler not instance of SessionDescriptionHandler.');
+    }
+
+    const peerConnection = sessionDescriptionHandler.peerConnection;
+    if (!peerConnection) {
+      throw new Error('Peer connection closed.');
+    }
+
+    peerConnection.getReceivers().forEach((receiver) => {
+      if (receiver.track) {
+        console.log(receiver);
+        receiver.track.enabled = enable;
+      }
+    });
+  }
+
+  // ***** Helper function to enable/disable media tracks. ***** //
+  private enableSenderTracks(enable: boolean): void {
+    if (!this.session) {
+      throw new Error('Session does not exist.');
+    }
+
+    const sessionDescriptionHandler = this.session.sessionDescriptionHandler;
+    if (!(sessionDescriptionHandler instanceof SessionDescriptionHandler)) {
+      throw new Error('Session\'s session description handler not instance of SessionDescriptionHandler.');
+    }
+
+    const peerConnection = sessionDescriptionHandler.peerConnection;
+    if (!peerConnection) {
+      throw new Error('Peer connection closed.');
+    }
+
+    peerConnection.getSenders().forEach((sender) => {
+      console.log(sender.track);
+      if (sender.track.kind === 'audio') {
+        sender.track.enabled = (sender.track.enabled ? false : true);
+        return;
+      }
+    });
+
+  }
+
+  // ***** Function to mute the current session ***** //
+  public mute(): void {
+    console.log('disabling media tracks...');
+    this.setMute(true);
+  }
+
+  // ***** Function to unmute the current session ***** //
+  public unmute(): void {
+    console.log('enabling media tracks...');
+    this.setMute(false);
+  }
+
+  // ***** Return whether or not the session is muted ***** //
+  public isMuted(): boolean {
+    return this.muted;
+  }
+
+  // ***** Helper to switch the mute fucntion in the current session ***** //
+  private setMute(mute: boolean): void {
+    if (!this.session) {
+      console.warn('A session is required to enabled/disable media tracks');
+      return;
+    }
+
+    if (this.session.state !== SessionState.Established) {
+      console.warn('An established session is required to enable/disable media tracks');
+      return;
+    }
+
+    this.muted = mute;
+
+    this.enableSenderTracks(!this.held && !this.muted);
+  }
 
 }

@@ -12,98 +12,94 @@ import { Globals } from '../../globals';
 export class DashboardComponent implements OnInit {
 
   globals: Globals;
-  userInfo = [];
-  selected = 0;
-  joinForm: FormGroup;
-  meetForm: FormGroup;
+  showBkSpce = false;
 
-  video = document.getElementById('video');
-  button = document.getElementById('button');
-  select = document.getElementById('select');
-  videoNewMeeting: boolean;
-  audioNewMeeting: boolean;
+  public uaInfo: any = {};
+
+  callerForm = new FormGroup({
+    phoneNumber: new FormControl('')
+  });
 
   constructor(
     private formBuilder: FormBuilder,
     private router: Router,
-    private sipJs: SipjsService,
+    public sipJs: SipjsService,
     globals: Globals
   ) {
-
     this.globals = globals;
-    this.userInfo = JSON.parse(window.localStorage.getItem('userInfo'));
-    this.videoNewMeeting = (window.localStorage.getItem('videoNewMeeting') === 'true' ? true : false);
-    this.audioNewMeeting = (window.localStorage.getItem('audioNewMeeting') === 'true' ? true : false);
+
+    // window.onbeforeunload = (event) => {
+    //   alert('pkpkpkk');
+    //   if (window.localStorage.getItem('onCall') === 'true') {
+    //       alert('You have made changes, but you did not save them yet.\nLeaving the page will revert all changes.');
+    //   }
+    // };
 
    }
 
   ngOnInit(): void {
-
-    const vcName = this.userInfo['videoConference'][0].conference_name;
-    const vcPin = this.userInfo['videoConference'][0].conference_pin_number;
-    const mrID = window.localStorage.getItem('lastMeetingRoom');
-
-    this.joinForm = this.formBuilder.group({
-      roomNumber: [(mrID ? mrID : ''), Validators.compose([Validators.required])],
-    });
-
-    this.meetForm = this.formBuilder.group({
-      meetName: [vcName, Validators.required],
-      pinNumb: [vcPin, Validators.required]
-    });
-
+    this.uaInfo = JSON.parse(window.localStorage.getItem('userCredentials'));
+    console.log(this.uaInfo);
   }
 
-  async newMeeting(numb: number): Promise<void> {
+  public directionCall(): string {
+    return (this.globals.outgoingCall ? 'Calling to...' : 'Incoming call from...');
+  }
 
-    this.globals.moderator = true;
-    this.router.navigate(['room']);
-    this.sipJs.makeCall('sip:*33' + numb + '@pbx.fokuz.online:7443');
-
+  public fromTo(): string {
+    const ft = (this.globals.outgoingCall ? this.globals.outgoingNumber : this.globals.incomingNumber);
+    if (ft) { return ft; }
+    return this.globals.outgoingNumber;
   }
 
 
-  go(tab: number): void {
-    this.selected = tab;
+  public async answerCall(): Promise<void> {
+    await this.sipJs.answerCall();
   }
 
-
-  async answerCall(): Promise<void> {
-
-    this.sipJs.answerCall();
-
+  public async rejectCall(): Promise<void> {
+    await this.sipJs.decline();
   }
 
-  public async joinRoom(): Promise<void> {
-
-    const numb = this.joinForm.controls.roomNumber.value;
-    window.localStorage.setItem('lastMeetingRoom', numb);
-
-    this.router.navigate(['room']);
-    this.sipJs.makeCall('sip:33' + numb + '@pbx.fokuz.online:7443');
+  public async hangupCall(): Promise<void> {
+    await this.sipJs.hangupCall();
   }
 
-  public setVideoNewMeeting(event: any): void {
+  public keyPress(event: any): void {
 
-    window.localStorage.setItem('videoNewMeeting', event.checked);
+    const pattern = /[0-9]/;
+    const inputChar = String.fromCharCode(event.charCode);
 
-  }
+    if (!pattern.test(inputChar)) {
+        // invalid character, prevent input
+        event.preventDefault();
+    }
 
-  public setAudioNewMeeting(event: any): void {
-
-    window.localStorage.setItem('audioNewMeeting', event.checked);
-
-  }
-
-
-  public saveConfRoom(): void {
+    this.globals.outgoingNumber = this.callerForm.controls.phoneNumber.value;
+    if (this.globals.outgoingNumber.length >= 0) {
+      this.showBkSpce = true;
+    } else {
+      this.showBkSpce = false;
+    }
 
   }
 
-  public signout(): void {
-    this.sipJs.disconnect();
-    this.router.navigate(['signin']);
+  public backSpacePhoneNumber(): void {
+
+    this.globals.outgoingNumber = this.globals.outgoingNumber.substr(0, this.globals.outgoingNumber.length - 1);
+
+    if (this.globals.outgoingNumber.length >= 0) {
+      this.showBkSpce = true;
+    } else {
+      this.showBkSpce = false;
+    }
 
   }
+
+  public changeCallNumber(event: any): void {
+    console.log(event);
+  }
+
+
 
 }

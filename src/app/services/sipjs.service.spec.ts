@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { SipjsService } from './sipjs.service';
+import { SipjsService } from './sipjs.service.ts.Ver_2';
 
 describe('SipjsService', () => {
   let service: SipjsService;

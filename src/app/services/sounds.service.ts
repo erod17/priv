@@ -13,7 +13,7 @@ import FILES from './sounds';
 
 
 
-const createAudio = (file) => {
+const createAudio = (file: string) => {
     const audio = document.createElement('audio');
     audio.src = file;
     audio.autoplay = true;
@@ -23,11 +23,17 @@ const createAudio = (file) => {
 };
 
 let SOUNDS = [
+     // tslint:disable-next-line:no-string-literal
      {playing: null, name: 'answered', audio: createAudio(FILES['answered']), volume: 1.0 },
+     // tslint:disable-next-line:no-string-literal
      {playing: null, name: 'rejected', audio: createAudio(FILES['rejected']), volume: 0.5 },
+     // tslint:disable-next-line:no-string-literal
      {playing: null, name: 'hangup', audio: createAudio(FILES['hangup']),  volume: 1.0 },
+     // tslint:disable-next-line:no-string-literal
      {playing: null, name: 'ringing', audio: createAudio(FILES['hangup']),  volume: 1.0 },
+     // tslint:disable-next-line:no-string-literal
      {playing: null, name: 'error_404', audio: createAudio(FILES['error_404']),  volume: 1.0 },
+     // tslint:disable-next-line:no-string-literal
      {playing: null, name: 'error_general', audio: createAudio(FILES['error_general']),  volume: 1.0 }
 ];
 
@@ -38,6 +44,7 @@ export default {
      * Play all the sounds so they will play in mobile browsers at any time
      * except: "API can only be initiated by a user gesture."
      */
+    // tslint:disable-next-line:typedef
     initialize() {
         if (initialized) {
             return false;

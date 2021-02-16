@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router, Event, NavigationStart, NavigationEnd, NavigationError } from '@angular/router';
+import { Location } from '@angular/common';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { AuthService } from './auth/auth.service';
-import { SipjsService } from '../app/services/sipjs.service';
+import { SipjsService } from './services/sipjs.service';
 import { Globals } from './globals';
 
 @Component({
@@ -10,82 +10,39 @@ import { Globals } from './globals';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
 
-  title = 'fokuz';
+  title = 'Private';
   globals: Globals;
-  varToken: any;
-  userInfo: any;
-  varContacts = [];
-  varContact = [];
-  varContactsIn = [];
-  varContactIn = [];
-  rstUserInfo: any = {};
-  varUserContacts = {};
+  credential: any = {};
 
 
   constructor(
     public breakpointObserver: BreakpointObserver,
     private router: Router,
-    private authUser: AuthService,
+    public location: Location,
     private sipJs: SipjsService,
     globals: Globals
   ) {
 
     this.globals = globals;
 
+    const uaOncall = window.localStorage.getItem('onCall');
+    if (uaOncall === 'false') {
+      window.localStorage.removeItem('onCall');
+    }
+
     let lastLocation = window.localStorage.getItem('lastLocation');
     if (!lastLocation) {
       lastLocation = '/dashboard';
     }
 
-    const vnm = window.localStorage.getItem('videoNewMeeting');
-    if (vnm === null) {
-      window.localStorage.setItem('videoNewMeeting', 'true');
-    }
-
-    const anm = window.localStorage.getItem('audioNewMeeting');
-    if (anm === null) {
-      window.localStorage.setItem('audioNewMeeting', 'true');
-    }
-
-    if (this.authUser.isAuthenticated()) {
-
-      this.rstUserInfo = JSON.parse(window.localStorage.getItem('userInfo'));
-
-      console.log(this.rstUserInfo);
-
-      const userExtension = this.rstUserInfo.extension.extension;
-      const password = this.rstUserInfo.extension.password;
-      const userFullname = this.rstUserInfo.contact_name_given + ' ' + this.rstUserInfo.contact_name_family;
-      const domain = this.rstUserInfo.extension.dial_domain;
-      const wssServer = this.rstUserInfo.extension.dial_domain;
-
-      this.globals.userCredentials = {  ext: userExtension,
-                                        pwd: password,
-                                        fn: userFullname,
-                                        dom: domain,
-                                        wss: wssServer };
-
-      this.sipJs.connect();
-
-      // this.getContacts();
-      this.router.navigate([lastLocation]);
-
-    }
-    // else {
-
-    //   this.router.navigate(['welcome']);
-
-    // }
-
-
+    console.log(this.location.path());
 
     this.router.events.subscribe((event: Event) => {
       if (event instanceof NavigationStart) {
           // Show loading indicator
           console.log('==========>>> NavigationStart <<<==========', event.url);
-
       }
 
       if (event instanceof NavigationEnd) {
@@ -100,35 +57,58 @@ export class AppComponent {
           // Present error to user
           console.log('==========>>> NavigationError <<<==========', event.error);
       }
+
     });
 
-
-
-
-
+    // window.addEventListener('beforeunload', (e) => {
+    //   // alert(e);
+    //   e.preventDefault();
+    //   e.returnValue = '';
+    // });
 
   }
 
 
+  async ngOnInit(): Promise<void> {
 
-  getContacts(): void {
+    this.credential = JSON.parse(window.localStorage.getItem('userCredentials'));
+    if (this.credential) {
 
-    this.varToken = window.localStorage.getItem('token');
-    this.authUser.getUserContacts(this.varToken)
-      .subscribe((data: any) => {
-        if (data.code === '200') {
-          this.varUserContacts = data.data;
-          this.varUserContacts = Array.of(this.varUserContacts);
-          window.localStorage.setItem('userContacts', JSON.stringify(this.varUserContacts));
+      const conn = await this.sipJs.connect(this.credential).then((ret) => {
+          return ret;
+      });
+      console.log(conn);
+      if (conn) {
+        // Some times the SIP Servers have a little delay returning the SDP response
+        // 1.5 seconds could be enough to wait for it and get the othe step.
+        setTimeout(() => {
+          // tslint:disable-next-line:no-string-literal
+          if (conn._state === 'Unregistered') {
+            alert('Error connecting to the Domain');
+            this.sipJs.disconnect();
+          } else {
+            this.router.navigate(['dashboard']);
+          }
+        }, 1500);
+      } else {
+        const connState = this.sipJs.getConnState();
+        console.log(connState.transport);
+        if (connState.transport.state === 'Disconnected') {
+          alert('Error in connection establishment: net::ERR_INTERNET_DISCONNECTED :::  ' + connState.transport['logger'].category);
+          this.unregister();
         }
-      }, err => {
+      }
+    }
 
-        if (err.status === 401) {
-          console.log('*************** E R R O R  **************');
-          console.log(err.status);
-        }
-    });
 
   }
+
+  public async unregister(): Promise<void> {
+    await this.sipJs.disconnect();
+    this.router.navigate(['welcome']);
+  }
+
+
+
 
 }

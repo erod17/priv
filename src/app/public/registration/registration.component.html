@@ -8,19 +8,19 @@
 
         <div class="text-center mb-4" style="margin-top: 20px;">
             <p class="h5 mb-5 font-weight-normal" style="color:lightslategrey;">
-                New account
+                User Account
             </p>
         </div>
 
-        <div>
+        <!-- <div>
             <ngb-alert class="alert-login-user" *ngIf="showSuccess" (close)="signupAlertClosed = true">
                 <strong>Success,</strong> {{signupMsg}}
                 <br>
                 <button mat-button color="primary" style="width: 100%; font-size: 20px; margin-top: 25px;"(click)="gotoSignin()">Acept</button>
             </ngb-alert>
-        </div>
+        </div> -->
 
-          <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" *ngIf="!showSuccess">
+          <form [formGroup]="registForm" (ngSubmit)="onSubmit()" *ngIf="!showSuccess">
 
               <div>
                   <ngb-alert class="alert-login-user" *ngIf="showError" (close)="signupAlertClosed = true">
@@ -33,9 +33,9 @@
                   <input matInput
                       type="text"
                       name="firstName"
-                      placeholder="First Name"
+                      placeholder="SIP Server / Domain"
                       autofocus
-                      formControlName="firstName"
+                      formControlName="domain"
                       >
                   <mat-hint></mat-hint>
                   <mat-error></mat-error>
@@ -52,8 +52,8 @@
                   <input matInput
                       type="text"
                       name="lastName"
-                      placeholder="Last Name"
-                      formControlName="lastName"
+                      placeholder="User Name"
+                      formControlName="username"
                       >
                   <mat-hint></mat-hint>
                   <mat-error></mat-error>
@@ -62,22 +62,6 @@
 
               </mat-form-field>
 
-              <br>
-
-
-              <mat-form-field class="">
-                  <input matInput
-                      type="email"
-                      name="email"
-                      placeholder="Email Address"
-                      formControlName="email"
-                      >
-                  <mat-hint></mat-hint>
-                  <mat-error></mat-error>
-                  <mat-error></mat-error>
-
-
-              </mat-form-field>
 
               <br>
 
@@ -97,27 +81,9 @@
               </mat-form-field>
 
 
-              <br>
-
-              <mat-form-field class="">
-                  <input matInput
-                      type="password"
-                      name="confirmPassword"
-                      placeholder="Confirm Password"
-                      formControlName="confirmPassword"
-                      >
-                  <mat-hint></mat-hint>
-                  <mat-error></mat-error>
-                  <mat-error></mat-error>
-                  <!-- mat-icon matSuffix class="cls-icons-into-textbox">email</mat-icon -->
-
-              </mat-form-field>
-
-
 
               <br>
-              <!-- button class="btn btn-lg btn-outline-primary btn-block" type="submit" [disabled]="!signupForm.valid">Signup</button -->
-              <button mat-button color="primary" type="submit" [disabled]="!signupForm.valid" style="width: 100%; font-size: 20px;">Signup</button>
+              <button mat-button color="primary" type="submit" [disabled]="!registForm.valid" style="width: 100%; font-size: 20px;">Register</button>
 
 
           </form>

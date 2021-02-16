@@ -1,11 +1,9 @@
-
-// Use Web Audio API to generate tones for
-// DTMF beeps in reaction to keypad press, a ring and a busy tone.
-
-
 import { Injectable } from '@angular/core';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
+
 export class ToneService {
 
   public freq1 = 0;
@@ -14,13 +12,14 @@ export class ToneService {
   public ringfreq2 = 480;
   public busyfreq1 = 480;
   public busyfreq2 = 620;
-  private AudioContext: AudioContext;
+  // private AudioContext: AudioContext;
+  private AudioContext: any;
   private status = 0;
-  private osc1;
-  private osc2;
+  private osc1: OscillatorNode;
+  private osc2: OscillatorNode;
   private gainNode;
-  private LFOSource;
-  private LFOBuffer;
+  private LFOSource: AudioBufferSourceNode;
+  private LFOBuffer: AudioBuffer;
   private dtmfFrequencies = {
     1: {f1: 697, f2: 1209},
     2: {f1: 697, f2: 1336},
@@ -37,12 +36,22 @@ export class ToneService {
   };
 
   constructor() {
-      this.AudioContext = new AudioContext();
+
+      if ((window as any).webkitAudioContext) {
+        this.AudioContext = new (window as any).webkitAudioContext();
+      } else if (window.AudioContext) {
+        this.AudioContext = new AudioContext();
+      } else {
+          // Web Audio API is not supported
+          alert('Sorry, but the Web Audio API is not supported by your browser. Please, consider upgrading to the latest version or downloading Google Chrome or Mozilla Firefox');
+      }
+
       this.status = 0;
       this.setup();
   }
 
-  setup(t = '') {
+  // tslint:disable-next-line:typedef
+  public setup(t = '') {
     this.osc1 = this.AudioContext.createOscillator();
     this.osc2 = this.AudioContext.createOscillator();
 
@@ -58,7 +67,8 @@ export class ToneService {
     }
 
     this.gainNode = this.AudioContext.createGain();
-    this.gainNode.gain.value = 0.25;
+    // tslint:disable-next-line:no-string-literal
+    this.gainNode.gain['value'] = 0.25;
 
     this.osc1.connect(this.gainNode);
     this.osc2.connect(this.gainNode);
@@ -66,7 +76,9 @@ export class ToneService {
     this.gainNode.connect(this.AudioContext.destination);
   }
 
-  stop() {
+
+  // tslint:disable-next-line:typedef
+  public stop() {
     if (this.status === 1) {
       this.osc1.stop(0);
       this.osc2.stop(0);
@@ -74,7 +86,8 @@ export class ToneService {
     }
   }
 
-  genericStart() {
+  // tslint:disable-next-line:typedef
+  public genericStart() {
     if (this.status === 0) {
       this.osc1.start(0);
       this.osc2.start(0);
@@ -82,13 +95,15 @@ export class ToneService {
     }
   }
 
-  start(keyPressed) {
+  // tslint:disable-next-line:typedef
+  public start(keyPressed: string | number) {
     if (this.status === 0) {
         const frequencyPair = this.dtmfFrequencies[keyPressed];
         this.freq1 = frequencyPair.f1;
         this.freq2 = frequencyPair.f2;
         this.setup();
-        this.gainNode.gain.value = 0.05;
+        // tslint:disable-next-line:no-string-literal
+        this.gainNode.gain['value'] = 0.05;
         this.genericStart();
 
     } else {
@@ -103,7 +118,8 @@ export class ToneService {
  *  first two seconds. This is used as a LFO to modulate gain on
  *  the Ringer. (Standard N. America ring)
  */
-  createRingerLFO() {
+  // tslint:disable-next-line:typedef
+  public createRingerLFO() {
     const channels = 1;
     const sampleRate = this.AudioContext.sampleRate;
     const frameCount = sampleRate * 6;
@@ -117,7 +133,8 @@ export class ToneService {
     this.LFOBuffer = arrayBuffer;
   }
 
-  createBusyLFO() {
+  // tslint:disable-next-line:typedef
+  public createBusyLFO() {
     const channels = 1;
     const sampleRate = this.AudioContext.sampleRate;
     const frameCount = sampleRate;
@@ -131,12 +148,14 @@ export class ToneService {
     this.LFOBuffer = arrayBuffer;
   }
 
-  startRinging() {
+  // tslint:disable-next-line:typedef
+  public startRinging() {
     if (this.status === 0) {
         this.setup('ring');
         this.genericStart();
         this.createRingerLFO();
-        this.gainNode.gain.value = 0;
+        // tslint:disable-next-line:no-string-literal
+        this.gainNode.gain['value'] = 0;
         this.LFOSource = this.AudioContext.createBufferSource();
         this.LFOSource.buffer = this.LFOBuffer;
         this.LFOSource.loop = true;
@@ -146,7 +165,8 @@ export class ToneService {
     }
   }
 
-  stopRinging() {
+  // tslint:disable-next-line:typedef
+  public stopRinging() {
       if ( typeof this.LFOSource !== 'undefined' ) {
         this.LFOSource.stop();
       }
@@ -154,12 +174,14 @@ export class ToneService {
       this.status = 0;
   }
 
-  startBusyTone() {
+  // tslint:disable-next-line:typedef
+  public startBusyTone() {
     if (this.status === 0) {
         this.setup('busy');
         this.genericStart();
         this.createBusyLFO();
-        this.gainNode.gain.value = 0;
+        // tslint:disable-next-line:no-string-literal
+        this.gainNode.gain['value'] = 0;
         this.LFOSource = this.AudioContext.createBufferSource();
         this.LFOSource.buffer = this.LFOBuffer;
         this.LFOSource.loop = true;
@@ -169,7 +191,8 @@ export class ToneService {
     }
   }
 
-  stopBusyTone() {
+  // tslint:disable-next-line:typedef
+  public stopBusyTone() {
       if ( typeof this.LFOSource !== 'undefined' ) {
         this.LFOSource.stop();
       }
@@ -177,7 +200,8 @@ export class ToneService {
       this.status = 0;
   }
 
-  stopAll() {
+  // tslint:disable-next-line:typedef
+  public stopAll() {
     this.stopBusyTone();
     this.stopRinging();
   }

@@ -3,8 +3,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { AuthGuard } from './auth/auth.guard';
 
 import { WelcomeComponent } from './public/welcome/welcome.component';
-import { SignupComponent } from './public/signup/signup.component';
-import { SigninComponent } from './public/signin/signin.component';
+import { RegistrationComponent } from './public/registration/registration.component';
 
 import { DashboardComponent } from './private/dashboard/dashboard.component';
 import { RoomComponent } from './private/room/room.component';
@@ -13,8 +12,7 @@ import { RoomComponent } from './private/room/room.component';
 const routes: Routes = [
   { path: '', redirectTo: '/welcome', pathMatch: 'full' },
   { path: 'welcome', component: WelcomeComponent},
-  { path: 'signup', component: SignupComponent},
-  { path: 'signin', component: SigninComponent},
+  { path: 'registration', component: RegistrationComponent},
 
   { path: 'dashboard',
     component: DashboardComponent,
@@ -32,7 +30,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, { relativeLinkResolution: 'legacy' })],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
