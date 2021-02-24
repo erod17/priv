@@ -1,8 +1,12 @@
-# erod17
+# WebRTC with SIP.js
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 10.1.0.
+This WebRTC demo has been created with Angular and SIP.js being able to serve call and video call (peer to peer) whatever is the SIP server (Freeswitch, OpenSIPS, Kamailio, as so on).
 
 ## Development server
+
+After clone it up
+
+Run `npm install`
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
